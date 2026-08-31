@@ -30,9 +30,17 @@
     --pc-red: #E8735F;
     --pc-red-deep: #D2543F;
 
-    /* coin faces */
+    /*
+     * Coin geometry. A quarter is one unit; every other coin is a fraction of
+     * it, so raising this one value scales a whole pile in proportion.
+     */
+    --pc-coin-size: 5rem;
+
+    /* coin faces — the deep pair is the relief on the heads/tails artwork */
     --pc-coin-copper: #D08A5B;
+    --pc-coin-copper-deep: #AF6A3B;
     --pc-coin-silver: #C8D0DA;
+    --pc-coin-silver-deep: #A2AEBF;
 
     /* elevation — hard offset, no blur, to match the brief's style */
     --pc-shadow: 4px 5px 0 rgba(27, 35, 54, 0.9);
