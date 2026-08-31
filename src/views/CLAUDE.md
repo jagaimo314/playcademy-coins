@@ -1,0 +1,136 @@
+# `views/`
+
+One folder per screen. Views are **not** shared with each other — they navigate, they never
+import or call one another.
+
+```js
+export function createLessonView({ params, store, navigate }) {
+    const root = /* build DOM */
+    return { el: root, destroy() { /* ... */ } }
+}
+```
+
+`params` is a `URLSearchParams`, `store` is the observable store, `navigate(path)` goes
+somewhere else. The router (`src/router.js`) owns the mount point and the lifecycle: it
+calls `destroy()` on the outgoing view **before** mounting the incoming one, then moves
+focus to the mount.
+
+Views may import anything. Nothing may import a view.
+
+## Route guards live in `routes.js`, not here
+
+A route entry declares a `guard` that returns a redirect path. Hosting a bakery is gated on
+`lesson.completed`; joining by `?code=` is not, because an invited kid should always be able
+to accept. Putting the gate in the table is what stops a hand-typed URL from skipping the
+menu — **do not re-implement a gate inside a view.**
+
+## State
+
+Views read the store and pass values down; components never touch it.
+
+Only the keys in `PERSISTENT_KEYS` (`state/persistence.js`) survive a reload —
+`lesson.completed`, `lesson.report`, `player.name`. Adding a persisted key means editing
+that list *and* `DEFAULTS`. Everything else in the store is in-memory: current problem,
+network status, live game state. The server is authoritative for anything multiplayer.
+
+`lesson.completed` is the Bakery's unlock. Only finishing the Lesson's ten free-play
+puzzles should set it for real. The Lesson also carries a **"Dev: mark lesson complete"**
+button so the gate can be exercised without sitting through the lesson — delete it before
+shipping.
+
+## A component only this view will use belongs in this folder
+
+Not in `components/`. That is the rule that keeps the shared set honest.
+
+## `lesson/`
+
+The largest view by a distance. Three modes run in order, and each hands over only when the
+student has an answer marked right:
+
+| Mode | What happens |
+| --- | --- |
+| `instruction` | The lesson demonstrates on `INSTRUCTION_PROBLEM`: narrates, boxes the pile, flips the coins to their value side, counts them one by one, walks the chart, fills the answer in. The student presses Check Answer. |
+| `guided` | The same shape with the doing handed over. Each beat waits for the taps it asked for before the next line is spoken. |
+| `freeplay` | `FREEPLAY_PROBLEMS` — ten piles, one at a time, no scaffolding. Finishing them sets `lesson.completed`. |
+
+| File | Holds |
+| --- | --- |
+| `lesson.content.js` | Problems and narration, as data. No DOM. |
+| `lesson.view.js` | Layout, the mode machine, and what each beat *does*. |
+| `diagnostics.js` | Wrong-answer classification and the report. **Written and tested by hand, not yet wired into the view.** |
+| `lesson.css` | The frame and everything positioned against it. |
+
+### Copy lives in content, behaviour lives in the view
+
+A script beat is `{ id, say }` where `say` is a function of the problem. The animation it
+runs is looked up by `id` in `INSTRUCTION_MOVES` / `GUIDED_MOVES` in the view. Edit wording
+without touching the view; edit choreography without touching the copy.
+
+Narration lines are written *against the problem* (`plural(p)`, `p.step`, `p.expected`) and
+never typed out, so swapping which pile the lesson opens on cannot leave it saying
+"nickels" over a heap of dimes. Values are spelled `5 cents`, not `5¢` — this text is read
+aloud as often as it is read.
+
+### The flow, and how not to break it
+
+`playBeat` says a line and runs the beat's move **together** — the animation is what the
+sentence is describing — and moves on only when both are done. Two floors and two ceilings
+keep it honest, and all four exist because something really does go wrong without them:
+
+- A **dwell floor** per line, so a muted or unsupported voice does not flick the captions
+  past unread. Speech alone cannot pace the beats.
+- A **speech ceiling** (`SPEECH_CAP_MS`), because a voice that never fires `end` would
+  stall the lesson forever.
+- Script animations awaited through `animationSettled()`, never `animation.finished`.
+- A **gate** for anything waiting on the student. `openGate()` records it in `pendingGate`
+  so `destroy()` can settle it — an unsettled gate holds every closure in the view alive.
+
+Two rules when editing this flow:
+
+1. **After every `await`, check `cancelled` before touching the DOM.** The view can be
+   destroyed mid-count, and `grid.animateSkipCount()` resolves `false` when it was reset or
+   torn down rather than finishing.
+2. **Open a gate inside the beat that enables the control, not after it.** Enable Check
+   Answer and *then* create the gate and a fast tap lands in the gap and is lost forever.
+
+### The frame
+
+A fixed **1200×800** box, centred in the viewport, with everything positioned against it —
+a hundred-chart whose cells drift with the viewport is no use for pointing at. Three things
+about it are load-bearing:
+
+- `.pc-lesson-stage` is `position: fixed`, which is how the view escapes `#app`'s centred
+  60rem column.
+- The frame's edge is an **`outline`, not a `border`**, so it takes up no layout and the
+  15px / 200px offsets inside are measured from the 1200×800 box itself.
+- The frame gets `margin: auto` inside a flex scroll container. `justify-content: center`
+  would push its left edge somewhere the scrollbar cannot reach on a small display.
+
+`?mode=guided|freeplay` skips ahead — a stand-in for resuming, and the only way to reach a
+later mode without playing the earlier ones.
+
+## `home/`
+
+Done. A menu, plus the unlock gate and code validation. It subscribes to
+`lesson.completed` and **unsubscribes in `destroy()`** — copy that pattern for any view
+that watches the store.
+
+## `bakery/`
+
+Scaffold. The lobby works end to end against an in-memory fake adapter — hosting, joining,
+the player list — with no server. No game yet.
+
+**The transport is chosen in exactly one place: `net/index.js`.** Swapping to a real
+backend is one import change there; nothing in `bakery.view.js` moves. See
+`docs/multiplayer-contract.md`.
+
+## `destroy()` checklist
+
+The router will call it. Everything below leaks past the element if you forget:
+
+- [ ] Store subscriptions — call the unsubscribe returned by `store.subscribe`.
+- [ ] `narrator.destroy()` — speech is page-global and keeps talking over the next view.
+- [ ] Timers, and any pending gate (`pendingGate?.settle(false)`).
+- [ ] A `cancelled` flag set first, so in-flight async work stops writing to dead DOM.
+- [ ] Every child component's own `destroy()` — including ones rebuilt per problem.
+- [ ] `root.remove()`.
