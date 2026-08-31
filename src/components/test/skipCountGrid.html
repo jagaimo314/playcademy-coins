@@ -1,0 +1,66 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Grid components — test page</title>
+<style>
+    /* Page-local scaffolding only; the components bring their own styles. */
+    .demo + .demo { margin-top: var(--pc-space-6); }
+
+    /* The class names are long enough to overflow a phone-width card. */
+    .demo h2 { overflow-wrap: anywhere; }
+
+    .demo__row {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: flex-start;
+        gap: var(--pc-space-3);
+    }
+
+    .demo__readout {
+        font-family: var(--pc-font-display);
+        font-size: var(--pc-text-lg);
+        font-weight: 800;
+        margin: 0 0 var(--pc-space-3);
+    }
+
+    .demo__grids {
+        display: flex;
+        flex-wrap: wrap;
+        gap: var(--pc-space-5);
+        margin-top: var(--pc-space-4);
+    }
+
+    .demo__figure { margin: 0; }
+
+    .demo__caption {
+        font-size: var(--pc-text-sm);
+        color: var(--pc-ink-soft);
+        margin-top: var(--pc-space-2);
+    }
+
+    .demo__caption code {
+        background: var(--pc-sky-deep);
+        border-radius: 4px;
+        padding: 0 4px;
+    }
+
+    .checks {
+        list-style: none;
+        margin: var(--pc-space-3) 0 0;
+        padding: 0;
+        font-size: var(--pc-text-sm);
+    }
+
+    .checks li { display: flex; gap: var(--pc-space-2); line-height: 1.5; }
+    .checks .is-pass { color: var(--pc-green-ink); font-weight: 800; }
+    .checks .is-fail { color: var(--pc-red-deep); font-weight: 800; }
+    .checks__detail { color: var(--pc-red-deep); }
+</style>
+</head>
+<body>
+<main id="app" tabindex="-1"></main>
+<script type="module" src="./skipCountGrid.test.js"></script>
+</body>
+</html>

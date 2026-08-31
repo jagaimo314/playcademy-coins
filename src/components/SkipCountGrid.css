@@ -1,0 +1,50 @@
+.pc-skipgrid__label {
+    /* Scales with the cell, which the grid publishes as --pc-grid-cell. */
+    font-size: calc(var(--pc-grid-cell, 40px) * 0.3);
+    font-weight: 700;
+    fill: var(--pc-ink, #1B2336);
+}
+
+.pc-skipgrid__circle {
+    fill: var(--pc-gold, #F2BF58);
+    stroke: var(--pc-ink, #1B2336);
+    stroke-width: 2;
+}
+
+/*
+ * Marks are hidden until the count reaches them. The inner group's origin is
+ * already the cell centre, so `0 0` scales from the middle.
+ */
+.pc-skipgrid__mark {
+    opacity: 0;
+    transform: scale(0.35);
+    transform-origin: 0 0;
+    transition:
+        opacity 160ms ease-out,
+        transform 240ms cubic-bezier(0.2, 1.5, 0.4, 1);
+}
+
+.pc-skipgrid__mark.is-revealed {
+    opacity: 1;
+    transform: scale(1);
+}
+
+.pc-skipgrid__fill {
+    fill: var(--pc-blue, #4998ED);
+    opacity: 0;
+    transition: opacity 140ms ease-out;
+}
+
+.pc-skipgrid__fill.is-on { opacity: 0.28; }
+
+/* A counting animation that pops is charming; one that pops for a kid who gets
+   motion sick is not. */
+@media (prefers-reduced-motion: reduce) {
+    .pc-skipgrid__mark,
+    .pc-skipgrid__mark.is-revealed {
+        transform: none;
+        transition: none;
+    }
+
+    .pc-skipgrid__fill { transition: none; }
+}

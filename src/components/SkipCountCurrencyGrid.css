@@ -1,0 +1,15 @@
+/*
+ * The indicator is the real coin component inside a foreignObject, so it only
+ * needs resizing to the cell and toning down to read as a ghost.
+ */
+.pc-currencygrid__ghost .pc-coin {
+    width: 100%;
+    height: 100%;
+    opacity: 0.75;
+    box-shadow: none;
+    border-style: dashed;
+}
+
+/* The cell label already shows the running total; the coin's own face value
+   underneath it would just be two numbers in one 40px square. */
+.pc-currencygrid__ghost .pc-coin__face { display: none; }

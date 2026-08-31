@@ -1,0 +1,22 @@
+/*
+ * Colours fall back to literals so a grid still reads correctly if it is ever
+ * dropped into a page that has not loaded the design tokens.
+ */
+.pc-grid {
+    display: block;
+    max-width: 100%;
+    height: auto;
+    font-family: var(--pc-font-display, sans-serif);
+}
+
+.pc-grid__line {
+    stroke: var(--pc-ink, #1B2336);
+    stroke-width: 1;
+    opacity: 0.3;
+}
+
+.pc-grid__border {
+    fill: none;
+    stroke: var(--pc-ink, #1B2336);
+    stroke-width: 2.5;
+}
