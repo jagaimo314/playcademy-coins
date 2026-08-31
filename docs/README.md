@@ -8,6 +8,7 @@ Reference material for the Playcademy take-home build. Read in this order.
 | [overview.md](overview.md) | What we are building: the three views, navigation rules, and how they map to the brief. |
 | [architecture.md](architecture.md) | Folder structure, routing, view lifecycle, component contract, state, tooling. |
 | [multiplayer-contract.md](multiplayer-contract.md) | Transport-agnostic room/message contract and the client-side network adapter interface. |
+| [bakery-backend-plan.md](bakery-backend-plan.md) | The Bakery game design and the plan for `server/`: authoritative loop, protocol additions, content generation, milestones. |
 
 ## Decisions already made
 
