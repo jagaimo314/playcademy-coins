@@ -1,12 +1,24 @@
 .pc-coin {
+    /*
+     * Size. Each coin's ratio is its real diameter against a quarter's, so a
+     * row of them keeps the proportions a child sees in their hand.
+     */
+    --pc-coin-ratio: 1;
+    --pc-coin-diameter: calc(var(--pc-coin-size) * var(--pc-coin-ratio));
+
+    /* The metal, and the darker relief the heads/tails artwork is drawn in. */
+    --pc-coin-metal: var(--pc-coin-silver);
+    --pc-coin-shade: var(--pc-coin-silver-deep);
+
+    position: relative;
     display: inline-flex;
     flex-direction: column;
     align-items: center;
     justify-content: center;
     gap: 2px;
 
-    width: 4.25rem;
-    height: 4.25rem;
+    width: var(--pc-coin-diameter);
+    height: var(--pc-coin-diameter);
     padding: 0;
 
     border: var(--pc-border);
@@ -14,17 +26,34 @@
     box-shadow: var(--pc-shadow-sm);
 
     font-family: var(--pc-font-display);
+    font-size: calc(var(--pc-coin-diameter) * 0.26);
     font-weight: 800;
     color: var(--pc-ink);
-    background: var(--pc-coin-silver);
+    background: var(--pc-coin-metal);
+
+    /* Clip the artwork to the disc, and keep the squash of a flip inside it. */
+    overflow: hidden;
 }
 
 button.pc-coin { cursor: pointer; }
 
-.pc-coin--penny { background: var(--pc-coin-copper); }
-.pc-coin--nickel { width: 4rem; height: 4rem; }
-.pc-coin--dime { width: 3.4rem; height: 3.4rem; font-size: var(--pc-text-sm); }
-.pc-coin--quarter { width: 5rem; height: 5rem; font-size: var(--pc-text-lg); }
+.pc-coin--penny {
+    --pc-coin-ratio: 0.78;
+    --pc-coin-metal: var(--pc-coin-copper);
+    --pc-coin-shade: var(--pc-coin-copper-deep);
+}
+
+.pc-coin--nickel { --pc-coin-ratio: 0.87; }
+.pc-coin--dime { --pc-coin-ratio: 0.73; }
+.pc-coin--quarter { --pc-coin-ratio: 1; }
+
+/*
+ * The Generic face is the abstract "a coin" token, not a particular one, so it
+ * drops the metal and reads as plain gold whatever the denomination.
+ */
+.pc-coin[data-display-type='Generic'] {
+    --pc-coin-metal: var(--pc-gold);
+}
 
 .pc-coin.is-selected {
     outline: 3px solid var(--pc-green-ink);
@@ -36,9 +65,23 @@ button.pc-coin:active {
     box-shadow: none;
 }
 
+/*
+ * Heads and Tails fill the disc with artwork. It sits under the caption rather
+ * than in the flex flow, so a running total still reads over the top of it.
+ */
+.pc-coin__art {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+}
+
 .pc-coin__face { line-height: 1; }
 
+.pc-coin__face[hidden] { display: none; }
+
 .pc-coin__caption {
+    position: relative;
     font-size: 0.72rem;
     font-weight: 700;
     color: var(--pc-ink-soft);
@@ -46,6 +89,14 @@ button.pc-coin:active {
 }
 
 .pc-coin__caption[hidden] { display: none; }
+
+/* Over artwork the total needs its own ground to stay readable. */
+.pc-coin:not([data-display-type='Generic']) .pc-coin__caption:not([hidden]) {
+    padding: 1px 6px;
+    border-radius: var(--pc-radius-pill);
+    color: var(--pc-ink);
+    background: rgb(255 255 255 / 0.85);
+}
 
 /* Piles of coins, used by both the lesson and the bakery. */
 .pc-coin-row {
