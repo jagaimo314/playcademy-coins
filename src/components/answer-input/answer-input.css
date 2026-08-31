@@ -1,0 +1,79 @@
+.pc-answer {
+    display: flex;
+    flex-direction: column;
+    gap: var(--pc-space-2);
+}
+
+.pc-answer__label {
+    font-family: var(--pc-font-display);
+    font-size: var(--pc-text-lg);
+    font-weight: 700;
+}
+
+.pc-answer__row {
+    display: flex;
+    gap: var(--pc-space-3);
+    flex-wrap: wrap;
+}
+
+.pc-answer__input {
+    flex: 1 1 8rem;
+    min-height: var(--pc-tap-min);
+    padding: var(--pc-space-2) var(--pc-space-4);
+
+    font-family: var(--pc-font-display);
+    font-size: var(--pc-text-xl);
+    font-weight: 800;
+    text-align: center;
+
+    color: var(--pc-ink);
+    background: var(--pc-white);
+    border: var(--pc-border);
+    border-radius: var(--pc-radius-sm);
+}
+
+.pc-answer__submit {
+    min-height: var(--pc-tap-min);
+    padding: 0 var(--pc-space-5);
+
+    font-family: var(--pc-font-display);
+    font-size: var(--pc-text-lg);
+    font-weight: 800;
+
+    color: var(--pc-white);
+    background: var(--pc-green);
+    border: var(--pc-border);
+    border-radius: var(--pc-radius-sm);
+    box-shadow: var(--pc-shadow-sm);
+    cursor: pointer;
+}
+
+.pc-answer__submit:hover:not(:disabled) { background: var(--pc-green-deep); }
+
+.pc-answer__submit:active:not(:disabled) {
+    transform: translate(3px, 3px);
+    box-shadow: none;
+}
+
+.pc-answer__submit:disabled {
+    background: var(--pc-sky-deep);
+    color: var(--pc-ink-soft);
+    cursor: not-allowed;
+    box-shadow: none;
+}
+
+.pc-answer__hint {
+    margin: 0;
+    font-weight: 700;
+    font-size: var(--pc-text-sm);
+    color: var(--pc-ink-soft);
+}
+
+.pc-answer__hint[hidden] { display: none; }
+
+/* State is carried by border colour AND the hint text, never colour alone. */
+.pc-answer.is-correct .pc-answer__input { border-color: var(--pc-green-ink); }
+.pc-answer.is-correct .pc-answer__hint { color: var(--pc-green-ink); }
+
+.pc-answer.is-wrong .pc-answer__input { border-color: var(--pc-red-deep); }
+.pc-answer.is-wrong .pc-answer__hint { color: var(--pc-red-deep); }

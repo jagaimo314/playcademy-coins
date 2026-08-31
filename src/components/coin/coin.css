@@ -1,0 +1,56 @@
+.pc-coin {
+    display: inline-flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 2px;
+
+    width: 4.25rem;
+    height: 4.25rem;
+    padding: 0;
+
+    border: var(--pc-border);
+    border-radius: var(--pc-radius-pill);
+    box-shadow: var(--pc-shadow-sm);
+
+    font-family: var(--pc-font-display);
+    font-weight: 800;
+    color: var(--pc-ink);
+    background: var(--pc-coin-silver);
+}
+
+button.pc-coin { cursor: pointer; }
+
+.pc-coin--penny { background: var(--pc-coin-copper); }
+.pc-coin--nickel { width: 4rem; height: 4rem; }
+.pc-coin--dime { width: 3.4rem; height: 3.4rem; font-size: var(--pc-text-sm); }
+.pc-coin--quarter { width: 5rem; height: 5rem; font-size: var(--pc-text-lg); }
+
+.pc-coin.is-selected {
+    outline: 3px solid var(--pc-green-ink);
+    outline-offset: 2px;
+}
+
+button.pc-coin:active {
+    transform: translate(2px, 2px);
+    box-shadow: none;
+}
+
+.pc-coin__face { line-height: 1; }
+
+.pc-coin__caption {
+    font-size: 0.72rem;
+    font-weight: 700;
+    color: var(--pc-ink-soft);
+    line-height: 1;
+}
+
+.pc-coin__caption[hidden] { display: none; }
+
+/* Piles of coins, used by both the lesson and the bakery. */
+.pc-coin-row {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--pc-space-3);
+}

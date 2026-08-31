@@ -1,0 +1,48 @@
+.pc-narrator {
+    display: flex;
+    flex-direction: column;
+    gap: var(--pc-space-3);
+
+    background: var(--pc-sky-deep);
+    border: var(--pc-border);
+    border-radius: var(--pc-radius);
+    padding: var(--pc-space-4);
+}
+
+/* The caption is not a fallback — it is always shown, so the lesson reads the
+   same with sound off as with sound on. */
+.pc-narrator__caption {
+    margin: 0;
+    font-family: var(--pc-font-display);
+    font-size: var(--pc-text-lg);
+    font-weight: 700;
+    min-height: 1.5em;
+}
+
+.pc-narrator__controls {
+    display: flex;
+    gap: var(--pc-space-2);
+    flex-wrap: wrap;
+}
+
+.pc-narrator__control {
+    min-height: 2.5rem;
+    padding: 0 var(--pc-space-4);
+
+    font-family: var(--pc-font-display);
+    font-size: var(--pc-text-sm);
+    font-weight: 700;
+
+    background: var(--pc-white);
+    color: var(--pc-ink);
+    border: 2px solid var(--pc-ink);
+    border-radius: var(--pc-radius-pill);
+    cursor: pointer;
+}
+
+.pc-narrator__control:hover:not(:disabled) { background: var(--pc-sky); }
+
+.pc-narrator__control:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}

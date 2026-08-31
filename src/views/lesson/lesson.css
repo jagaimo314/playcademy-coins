@@ -1,0 +1,19 @@
+.pc-lesson__note {
+    margin: var(--pc-space-2) 0 0;
+    font-weight: 700;
+    font-size: var(--pc-text-sm);
+    color: var(--pc-ink-soft);
+}
+
+.pc-lesson__actions {
+    display: flex;
+    gap: var(--pc-space-3);
+    flex-wrap: wrap;
+    align-items: center;
+}
+
+.pc-lesson__dev {
+    margin-left: auto;
+    font-size: var(--pc-text-sm);
+    opacity: 0.75;
+}

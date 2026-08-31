@@ -1,0 +1,29 @@
+.pc-progress {
+    display: flex;
+    align-items: center;
+    gap: var(--pc-space-3);
+}
+
+.pc-progress__track {
+    flex: 1;
+    height: 1.1rem;
+    background: var(--pc-white);
+    border: var(--pc-border);
+    border-radius: var(--pc-radius-pill);
+    overflow: hidden;
+}
+
+.pc-progress__fill {
+    height: 100%;
+    width: 0;
+    background: var(--pc-green);
+    transition: width 0.25s ease;
+}
+
+.pc-progress__text {
+    margin: 0;
+    font-family: var(--pc-font-display);
+    font-weight: 700;
+    font-size: var(--pc-text-sm);
+    white-space: nowrap;
+}

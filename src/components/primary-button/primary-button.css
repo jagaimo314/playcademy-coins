@@ -1,0 +1,52 @@
+.pc-button-group {
+    display: flex;
+    flex-direction: column;
+    gap: var(--pc-space-2);
+    align-items: stretch;
+}
+
+.pc-button {
+    font-family: var(--pc-font-display);
+    font-size: var(--pc-text-lg);
+    font-weight: 800;
+    min-height: var(--pc-tap-min);
+    padding: var(--pc-space-3) var(--pc-space-5);
+    border: var(--pc-border);
+    border-radius: var(--pc-radius);
+    box-shadow: var(--pc-shadow-sm);
+    background: var(--pc-blue);
+    color: var(--pc-white);
+    cursor: pointer;
+    transition: transform 0.08s ease, box-shadow 0.08s ease;
+}
+
+.pc-button--green { background: var(--pc-green); }
+.pc-button--gold { background: var(--pc-gold); color: var(--pc-ink); }
+.pc-button--quiet { background: var(--pc-white); color: var(--pc-ink); }
+
+.pc-button:hover:not(:disabled) { background: var(--pc-blue-deep); }
+.pc-button--green:hover:not(:disabled) { background: var(--pc-green-deep); }
+.pc-button--gold:hover:not(:disabled) { background: var(--pc-gold-deep); }
+.pc-button--quiet:hover:not(:disabled) { background: var(--pc-sky-deep); }
+
+/* Press the button into its own shadow. */
+.pc-button:active:not(:disabled) {
+    transform: translate(3px, 3px);
+    box-shadow: none;
+}
+
+.pc-button:disabled {
+    background: var(--pc-sky-deep);
+    color: var(--pc-ink-soft);
+    border-color: var(--pc-ink-soft);
+    box-shadow: none;
+    cursor: not-allowed;
+}
+
+.pc-button__reason {
+    margin: 0;
+    font-size: var(--pc-text-sm);
+    font-weight: 700;
+    color: var(--pc-ink-soft);
+    text-align: center;
+}

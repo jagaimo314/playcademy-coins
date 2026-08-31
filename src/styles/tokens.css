@@ -1,0 +1,68 @@
+/*
+ * Design tokens. Everything else in the app references these — no raw hex
+ * outside this file.
+ *
+ * The palette is lifted from the take-home brief's own page so the app reads as
+ * part of the same product: sky background, ink outlines, hard offset shadows.
+ *
+ * Type note: no webfonts are loaded, so there is no network dependency and no
+ * flash of unstyled text. The stacks below fall back to rounded system faces.
+ */
+:root {
+    /* colour */
+    --pc-sky: #E9F2FB;
+    --pc-sky-deep: #D9E7F7;
+    --pc-white: #FFFFFF;
+    --pc-ink: #1B2336;
+    --pc-ink-soft: #47536C;
+
+    --pc-blue: #4998ED;
+    --pc-blue-deep: #3180D5;
+    --pc-blue-ink: #2668B0;
+
+    --pc-green: #7CC962;
+    --pc-green-deep: #69B352;
+    --pc-green-ink: #41762F;
+
+    --pc-gold: #F2BF58;
+    --pc-gold-deep: #E7A937;
+
+    --pc-red: #E8735F;
+    --pc-red-deep: #D2543F;
+
+    /* coin faces */
+    --pc-coin-copper: #D08A5B;
+    --pc-coin-silver: #C8D0DA;
+
+    /* elevation — hard offset, no blur, to match the brief's style */
+    --pc-shadow: 4px 5px 0 rgba(27, 35, 54, 0.9);
+    --pc-shadow-sm: 3px 3px 0 rgba(27, 35, 54, 0.9);
+    --pc-border: 2.5px solid var(--pc-ink);
+
+    /* spacing */
+    --pc-space-1: 0.25rem;
+    --pc-space-2: 0.5rem;
+    --pc-space-3: 0.75rem;
+    --pc-space-4: 1rem;
+    --pc-space-5: 1.5rem;
+    --pc-space-6: 2rem;
+    --pc-space-7: 3rem;
+
+    /* radius */
+    --pc-radius: 18px;
+    --pc-radius-sm: 10px;
+    --pc-radius-pill: 999px;
+
+    /* type */
+    --pc-font-body: 'Nunito', 'Avenir Next', 'Trebuchet MS', sans-serif;
+    --pc-font-display: 'Baloo 2', 'Arial Rounded MT Bold', 'Avenir Next', sans-serif;
+
+    --pc-text-sm: 0.9rem;
+    --pc-text-base: 1.05rem;
+    --pc-text-lg: 1.25rem;
+    --pc-text-xl: clamp(1.55rem, 3.2vw, 2rem);
+    --pc-text-display: clamp(2.2rem, 6vw, 3.4rem);
+
+    /* hit targets — K-2 hands, often on a tablet */
+    --pc-tap-min: 3rem;
+}
