@@ -2,12 +2,27 @@ import { append, clear, svg } from '../lib/dom.js'
 import { Grid } from './Grid.js'
 import './SkipCountGrid.css'
 
+/** The three states an answer star can be in. */
+const ANSWER_STATUSES = Object.freeze(['pending', 'correct', 'wrong'])
+
+/** How the answer star reads out loud, so its colour is never the only cue. */
+const ANSWER_WORDS = Object.freeze({
+    pending: 'not checked yet',
+    correct: 'correct',
+    wrong: 'wrong',
+})
+
 /**
  * A grid that knows how to be counted: every cell carries a label, and a circle
  * indicator sits on every `skipInterval`-th cell — the 5, 10, 15, 20 a student
  * says out loud. The indicators start hidden so `animateSkipCount()` can walk
  * them one at a time, which is the whole point of the component: the kid sees
  * the rhythm of the count, not just the answer.
+ *
+ * It also holds the student's answer: `markAnswer()` puts a star on the cell
+ * they typed, and `setAnswerStatus()` turns it green or red once the count has
+ * run. The star is deliberately separate from the count, so replaying the count
+ * leaves the answer sitting where it was put.
  *
  * Two hooks exist for subclasses, and both are called during `draw()`:
  *   - `formatCellLabel(cell)`          — what a cell reads
@@ -18,6 +33,11 @@ export class SkipCountGrid extends Grid {
     #marks = new Map()
     /** cell -> highlight rect, created on first highlight. */
     #fills = new Map()
+
+    /** The answer star: the <g> carrying its status class, or null. */
+    #answer = null
+    #answerCell = null
+    #answerStatus = null
 
     #timer = null
     #settle = null
@@ -73,6 +93,16 @@ export class SkipCountGrid extends Grid {
         return this.#timer !== null
     }
 
+    /** The cell the answer star sits on, or `null` when nothing is marked. */
+    get answerCell() {
+        return this.#answerCell
+    }
+
+    /** `'pending' | 'correct' | 'wrong'`, or `null` when nothing is marked. */
+    get answerStatus() {
+        return this.#answerStatus
+    }
+
     /* ------------------------------------------------------------------- hooks */
 
     /** What a cell reads. */
@@ -89,7 +119,20 @@ export class SkipCountGrid extends Grid {
     }
 
     describe() {
-        return `${super.describe()}, counting by ${this.skipInterval}`
+        return [
+            super.describe(),
+            `counting by ${this.skipInterval}`,
+            this.describeAnswer(),
+        ].filter(Boolean).join(', ')
+    }
+
+    /**
+     * The answer star in words, so a screen reader gets the verdict a sighted
+     * student reads off its colour. Empty when nothing is marked.
+     */
+    describeAnswer() {
+        if (this.#answerCell === null) return ''
+        return `answer star on ${this.formatCellLabel(this.#answerCell)}, ${ANSWER_WORDS[this.#answerStatus]}`
     }
 
     /* -------------------------------------------------------------------- draw */
@@ -103,11 +146,18 @@ export class SkipCountGrid extends Grid {
         this.#marks.clear()
         this.#fills.clear()
 
+        // The star goes out with the layer it lived in.
+        this.#answer = null
+        this.#answerCell = null
+        this.#answerStatus = null
+
         // Indicators sit under the labels so a number stays readable on top of
-        // whatever the subclass draws.
+        // whatever the subclass draws. The answer star sits between the two:
+        // over the coin it lands on, still under the running total.
         this.indicatorLayer = svg('g', { class: 'pc-skipgrid__indicators' })
+        this.answerLayer = svg('g', { class: 'pc-skipgrid__answers' })
         this.labelLayer = svg('g', { class: 'pc-skipgrid__labels' })
-        append(this.contentLayer, [this.indicatorLayer, this.labelLayer])
+        append(this.contentLayer, [this.indicatorLayer, this.answerLayer, this.labelLayer])
 
         if (this.showLabels) {
             for (let cell = 1; cell <= this.cellCount; cell += 1) {
@@ -183,6 +233,24 @@ export class SkipCountGrid extends Grid {
         })
     }
 
+    /**
+     * Reveal the next hidden indicator, in counting order. This is the same
+     * count as `animateSkipCount()`, driven a step at a time by the student
+     * rather than played to them — one tap, one coin landing on the chart.
+     *
+     * Returns the cell revealed, or `null` once the count is complete.
+     */
+    revealNext() {
+        const cells = [...this.#marks.keys()]
+        const index = this.revealedCount
+
+        if (index >= cells.length) return null
+
+        this.#reveal(cells[index], index)
+
+        return cells[index]
+    }
+
     /** Hide every indicator again and stop any count in progress. */
     resetSkipCount() {
         this.#cancel()
@@ -190,6 +258,73 @@ export class SkipCountGrid extends Grid {
         for (const mark of this.#marks.values()) {
             mark.classList.remove('is-revealed')
         }
+
+        return this
+    }
+
+    /* ----------------------------------------------------------------- answers */
+
+    /**
+     * Put the student's answer on the chart as a star outline on the cell they
+     * typed, replacing any previous one. `status` starts at `'pending'` — the
+     * answer is on the board but not yet judged — and `setAnswerStatus()` turns
+     * it green or red once the count has run.
+     *
+     * Returns `false` for a cell off the end of the chart. There is nowhere to
+     * draw such an answer, so the caller has to say something about it instead.
+     */
+    markAnswer(cell, status = 'pending') {
+        this.clearAnswer()
+
+        if (!Number.isInteger(cell) || cell < 1 || cell > this.cellCount) return false
+
+        const { x, y } = this.calcCellCenter(cell)
+
+        const star = svg('polygon', {
+            class: 'pc-skipgrid__star',
+            points: starPoints(this.cellSize * 0.46),
+        })
+
+        // Outer group positions, inner group pops in — same split as the marks.
+        this.#answer = svg('g', { class: 'pc-skipgrid__answer', 'data-cell': cell },
+            svg('g', { class: 'pc-skipgrid__star-pop' }, star))
+
+        append(this.answerLayer, svg('g', { transform: `translate(${x} ${y})` }, this.#answer))
+        this.#answerCell = cell
+
+        this.setAnswerStatus(status)
+
+        return true
+    }
+
+    /** Judge the star already on the chart, without moving it. */
+    setAnswerStatus(status) {
+        if (!ANSWER_STATUSES.includes(status)) {
+            throw new Error(`Unknown answer status: ${status}`)
+        }
+
+        if (!this.#answer) return this
+
+        this.#answerStatus = status
+
+        for (const name of ANSWER_STATUSES) {
+            this.#answer.classList.toggle(`is-${name}`, name === status)
+        }
+
+        this.applyLabel()
+
+        return this
+    }
+
+    /** Take the answer star off the chart. */
+    clearAnswer() {
+        clear(this.answerLayer)
+
+        this.#answer = null
+        this.#answerCell = null
+        this.#answerStatus = null
+
+        this.applyLabel()
 
         return this
     }
@@ -251,4 +386,23 @@ export class SkipCountGrid extends Grid {
             settle(false)
         }
     }
+}
+
+/**
+ * `points` for a five-pointed star centred on the origin, first point straight
+ * up. The inner radius is the golden ratio of the outer one, which is the
+ * proportion that reads as "a star" rather than as a spiky blob.
+ */
+function starPoints(radius, points = 5, innerRatio = 0.382) {
+    const step = Math.PI / points
+    const coords = []
+
+    for (let i = 0; i < points * 2; i += 1) {
+        const r = i % 2 === 0 ? radius : radius * innerRatio
+        const angle = -Math.PI / 2 + i * step
+
+        coords.push(`${(Math.cos(angle) * r).toFixed(2)},${(Math.sin(angle) * r).toFixed(2)}`)
+    }
+
+    return coords.join(' ')
 }

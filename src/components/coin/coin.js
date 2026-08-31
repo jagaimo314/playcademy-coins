@@ -1,4 +1,4 @@
-import { el } from '../../lib/dom.js'
+import { animationSettled, el, prefersReducedMotion } from '../../lib/dom.js'
 import { coin as lookup, formatCents } from '../../lib/money.js'
 import { createCoinArt, DISPLAY_TYPES, isDisplayType, OPPOSITE_DISPLAY_TYPE } from './coin-faces.js'
 import './coin.css'
@@ -7,9 +7,6 @@ export { DISPLAY_TYPES }
 
 /** Half of a flip: the squash in, then the stretch back out. */
 const FLIP_HALF_MS = 110
-
-const prefersReducedMotion = () =>
-    globalThis.matchMedia?.('(prefers-reduced-motion: reduce)').matches ?? false
 
 /**
  * A single coin. Used by both the Lesson (piles to skip-count) and the Bakery
@@ -91,11 +88,15 @@ export function createCoin({
 
         // Squash to nothing, swap the face out of sight, spring back. Faked in
         // 2D on purpose: no perspective to set up, and it reads as a flip.
+        //
+        // Both halves are awaited through `animationSettled`: a caller
+        // sequencing flips must land on the new face even on a page that has
+        // stopped painting, where the animations would otherwise never finish.
         const squash = root.animate(
             [{ transform: 'scaleX(1)' }, { transform: 'scaleX(0)' }],
             { duration: FLIP_HALF_MS, easing: 'ease-in', fill: 'forwards' },
         )
-        await squash.finished
+        await animationSettled(squash)
 
         setDisplayType(next)
 
@@ -104,7 +105,7 @@ export function createCoin({
             { duration: FLIP_HALF_MS, easing: 'ease-out' },
         )
         squash.cancel()
-        await stretch.finished
+        await animationSettled(stretch)
 
         return next
     }

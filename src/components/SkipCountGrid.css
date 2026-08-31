@@ -48,3 +48,42 @@
 
     .pc-skipgrid__fill { transition: none; }
 }
+
+/*
+ * The answer star. It goes on as a bare outline — the student's answer, placed
+ * but not yet judged — and is filled in once the count has run. The cell label
+ * draws over the top of it, so the number stays readable either way.
+ */
+.pc-skipgrid__star {
+    fill: none;
+    stroke: var(--pc-ink, #1B2336);
+    stroke-width: 3;
+    stroke-linejoin: round;
+    transition: fill 200ms ease-out, stroke 200ms ease-out;
+}
+
+.pc-skipgrid__answer.is-correct .pc-skipgrid__star {
+    fill: var(--pc-green, #7CC962);
+    stroke: var(--pc-green-ink, #41762F);
+}
+
+.pc-skipgrid__answer.is-wrong .pc-skipgrid__star {
+    fill: var(--pc-red, #E8735F);
+    stroke: var(--pc-red-deep, #D2543F);
+}
+
+/* Inner group, so the pop does not fight the outer group's translate. */
+.pc-skipgrid__star-pop {
+    transform-origin: 0 0;
+    animation: pc-skipgrid-star-in 260ms cubic-bezier(0.2, 1.5, 0.4, 1);
+}
+
+@keyframes pc-skipgrid-star-in {
+    from { opacity: 0; transform: scale(0.4) rotate(-25deg); }
+    to { opacity: 1; transform: scale(1) rotate(0deg); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .pc-skipgrid__star { transition: none; }
+    .pc-skipgrid__star-pop { animation: none; }
+}

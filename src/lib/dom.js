@@ -14,7 +14,7 @@ const SVG_NS = 'http://www.w3.org/2000/svg'
  *
  * Props are applied as attributes, except:
  *   - `class`      accepts a string or an array (falsy entries dropped)
- *   - `style`      accepts an object of camelCase properties
+ *   - `style`      accepts an object of camelCase properties, plus `--custom` ones
  *   - `dataset`    accepts an object of data-* values
  *   - `on*`        registers an event listener (onClick -> 'click')
  *   - boolean-ish  `true` sets the attribute, `false`/`null`/`undefined` omits it
@@ -55,6 +55,39 @@ export function append(parent, children) {
     return parent
 }
 
+/**
+ * Whether the user has asked for less motion. Read per call rather than cached:
+ * the setting can change while the app is open.
+ *
+ * CSS handles this on its own; this is for animations driven from script, which
+ * the `prefers-reduced-motion` rules in base.css cannot reach.
+ */
+export function prefersReducedMotion() {
+    return globalThis.matchMedia?.('(prefers-reduced-motion: reduce)').matches ?? false
+}
+
+/**
+ * Wait for a script-driven animation to be over — but never forever.
+ *
+ * An animation only advances while the page is being painted, and `finished`
+ * simply never settles when it is not: switch apps on a tablet mid-lesson and
+ * anything awaiting a flip or a fade stops dead, then stays stopped. `finished`
+ * also rejects outright when the animation is cancelled. Either way, a sequence
+ * that has to keep moving cannot await it raw.
+ *
+ * `grace` is the slack allowed on top of the animation's own duration.
+ */
+export function animationSettled(animation, grace = 500) {
+    const timing = animation.effect?.getTiming() ?? {}
+    const duration = Number(timing.duration) || 0
+    const iterations = Number(timing.iterations) || 1
+
+    return Promise.race([
+        animation.finished.catch(() => {}),
+        new Promise(resolve => setTimeout(resolve, duration * iterations + grace)),
+    ])
+}
+
 /** Remove every child of a node. */
 export function clear(node) {
     while (node.firstChild) node.removeChild(node.firstChild)
@@ -71,7 +104,12 @@ function applyProps(node, props) {
             const names = (Array.isArray(value) ? value : [value]).filter(Boolean)
             if (names.length) node.setAttribute('class', names.join(' '))
         } else if (key === 'style' && typeof value === 'object') {
-            Object.assign(node.style, value)
+            for (const [name, setting] of Object.entries(value)) {
+                // Custom properties are invisible to `style.foo = ...`; they
+                // only exist through setProperty, so they need the long way.
+                if (name.startsWith('--')) node.style.setProperty(name, setting)
+                else node.style[name] = setting
+            }
         } else if (key === 'dataset' && typeof value === 'object') {
             Object.assign(node.dataset, value)
         } else if (key === 'text') {

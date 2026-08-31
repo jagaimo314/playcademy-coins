@@ -1,0 +1,138 @@
+import { animationSettled, el, prefersReducedMotion } from '../../lib/dom.js'
+import { describeCount } from '../../lib/money.js'
+import { createCoin } from '../coin/coin.js'
+import './coin-pile.css'
+
+/** Appear, hold, fade — the whole life of the boundary drawn round the pile. */
+const BOX_MS = 1700
+
+/** How long a coin stays turned to its value side during a peek. */
+const PEEK_MS = 900
+
+const delay = ms => new Promise(resolve => setTimeout(resolve, ms))
+
+/**
+ * A pile of coins, all one denomination, laid out in rows — the set a student
+ * is asked to count.
+ *
+ * It exists because the lesson has to *gesture* at the pile, not just show it.
+ * A row of coins can be drawn with a flex container; drawing a boundary round
+ * the whole pile ("these are nickels"), round one coin at a time (counting
+ * them), or turning every coin over to its value side and back ("remember, five
+ * cents") is the pile's own job, and all three are things the Bakery will want
+ * too.
+ *
+ * Presentational: it reports taps upward and holds no state but the marks it
+ * has been told to draw.
+ */
+export function createCoinPile({
+    denomination,
+    count,
+    /** Coins per row. The last row is short when the count does not divide. */
+    columns = 5,
+    /** Gap between coins, in pixels. */
+    gap = 5,
+    /** The face the pile rests on. `'Generic'` is the value side. */
+    displayType = 'Heads',
+    /** Called with a coin's index when it is tapped. Omit for a pile to look at. */
+    onCoinTap = null,
+}) {
+    const interactive = typeof onCoinTap === 'function'
+
+    const coins = Array.from({ length: count }, (_, index) => createCoin({
+        denomination,
+        displayType,
+        onClick: interactive ? () => onCoinTap(index) : null,
+    }))
+
+    const box = el('div', { class: 'pc-pile__box', hidden: true })
+
+    const root = el('div', {
+        class: 'pc-pile',
+        style: {
+            '--pc-pile-columns': String(columns),
+            '--pc-pile-gap': `${gap}px`,
+        },
+        // Coins that can be tapped are buttons and name themselves; coins that
+        // cannot are one picture, and the picture needs the name.
+        role: interactive ? 'group' : 'img',
+        'aria-label': `${describeCount(count, denomination)} to count`,
+    }, [
+        el('div', { class: 'pc-pile__coins' }, coins.map(instance => instance.el)),
+        box,
+    ])
+
+    /**
+     * Draw a boundary round the whole pile, hold it, and let it fade. Resolves
+     * once the box is gone.
+     */
+    async function revealBox() {
+        box.hidden = false
+
+        // Reduced motion keeps the box — it is information, not decoration —
+        // and drops only the movement.
+        const frames = prefersReducedMotion()
+            ? [{ opacity: 1 }, { opacity: 1 }]
+            : [
+                { opacity: 0, transform: 'scale(0.94)' },
+                { opacity: 1, transform: 'scale(1)', offset: 0.18 },
+                { opacity: 1, transform: 'scale(1)', offset: 0.72 },
+                { opacity: 0, transform: 'scale(1)' },
+            ]
+
+        await animationSettled(box.animate(frames, { duration: BOX_MS, easing: 'ease-out' }))
+
+        box.hidden = true
+    }
+
+    /** Turn `instances` over to `face`, hold, and turn them back. */
+    async function peek(instances, face) {
+        const resting = instances[0]?.displayType
+
+        // A pile already showing that face has nothing to reveal by turning.
+        if (!resting || resting === face) return
+
+        await Promise.all(instances.map(instance => instance.flipCoin(face)))
+        await delay(PEEK_MS)
+        await Promise.all(instances.map(instance => instance.flipCoin(resting)))
+    }
+
+    return {
+        el: root,
+        coins,
+        denomination,
+        count,
+
+        revealBox,
+
+        /** Turn the whole pile over to its value side and back. */
+        peekAll(face = 'Generic') {
+            return peek(coins, face)
+        },
+
+        /** Turn one coin over to its value side and back. */
+        peekCoin(index, face = 'Generic') {
+            const instance = coins[index]
+            return instance ? peek([instance], face) : Promise.resolve()
+        },
+
+        /**
+         * Mark one coin: `{ selected }` draws a boundary round it, `caption`
+         * writes underneath it. Used for both counting passes — the ordinals
+         * first, then the running total.
+         */
+        markCoin(index, next) {
+            coins[index]?.update(next)
+        },
+
+        /** Clear every boundary and caption, ready for the next pass. */
+        reset() {
+            for (const instance of coins) instance.update({ selected: false, caption: null })
+        },
+
+        destroy() {
+            for (const instance of coins) instance.destroy()
+            root.remove()
+        },
+    }
+}

@@ -1,19 +1,190 @@
-.pc-lesson__note {
-    margin: var(--pc-space-2) 0 0;
-    font-weight: 700;
-    font-size: var(--pc-text-sm);
-    color: var(--pc-ink-soft);
+/*
+ * The lesson is a fixed 1200x800 frame, centred in the viewport. It steps out
+ * of #app's centred column on purpose: the chart's geometry has to be the same
+ * everywhere, so the frame is sized in pixels and the viewport only decides
+ * where it sits.
+ */
+.pc-lesson-stage {
+    position: fixed;
+    inset: 0;
+    z-index: 1;
+
+    display: flex;
+    padding: var(--pc-space-4);
+    overflow: auto;
+    background: var(--pc-sky);
 }
 
-.pc-lesson__actions {
+/*
+ * The frame's edge is an outline rather than a border so it takes up no layout:
+ * every offset inside the frame is then measured from the 1200x800 box itself,
+ * not from 1200x800 minus two border widths.
+ */
+.pc-lesson__frame {
+    position: relative;
+    flex: 0 0 auto;
+    /*
+     * `margin: auto` rather than the stage centring its own content: on a
+     * display too small for 1200x800 that keeps the overflow reachable, where
+     * `justify-content: center` would push the frame's left edge somewhere the
+     * scrollbar cannot follow.
+     */
+    margin: auto;
+
+    /* Everything left of the chart shares this column. */
+    --pc-lesson-work-width: calc(
+        100% - var(--pc-lesson-grid-inset) - var(--pc-lesson-grid-width)
+    );
+
+    background: var(--pc-white);
+    outline: var(--pc-border);
+    border-radius: var(--pc-radius);
+    box-shadow: var(--pc-shadow);
+}
+
+/* The chart hangs off the right edge of the frame, vertically centred. */
+.pc-lesson__chart {
+    position: absolute;
+    top: 50%;
+    right: var(--pc-lesson-grid-inset);
+    transform: translateY(-50%);
+}
+
+/*
+ * The narrator takes the top left corner — the band above the pile is its own,
+ * and it is sized to fit so a long line can never reach down into the coins.
+ */
+.pc-lesson__narration {
+    position: absolute;
+    top: var(--pc-space-5);
+    left: var(--pc-space-5);
+
+    width: calc(var(--pc-lesson-work-width) - 2 * var(--pc-space-5));
+    height: calc(var(--pc-lesson-pile-top) - 2 * var(--pc-space-5));
+}
+
+.pc-lesson__narration .pc-narrator { height: 100%; }
+
+/* Smaller than the component's default, to keep three lines inside the band. */
+.pc-lesson__narration .pc-narrator__caption {
+    font-size: var(--pc-text-base);
+    min-height: 0;
+    overflow-y: auto;
+}
+
+.pc-lesson__narration .pc-narrator__controls { margin-top: auto; }
+
+/*
+ * Everything the student touches, in the space the chart leaves: the pile, the
+ * question, the field, the button — one centred column, top to bottom.
+ */
+.pc-lesson__work {
+    position: absolute;
+    top: var(--pc-lesson-pile-top);
+    left: 0;
+    width: var(--pc-lesson-work-width);
+    padding: 0 var(--pc-space-4);
+
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: var(--pc-space-6);
+}
+
+/* Holder only — the pile component brings its own rows-of-five layout. */
+.pc-lesson__pile { display: flex; }
+
+.pc-lesson__work .pc-answer { align-items: center; }
+
+/* The question reads as the lesson's voice, not as a form label. */
+.pc-lesson__work .pc-answer__label {
+    font-size: var(--pc-text-xl);
+    font-weight: 800;
+}
+
+/* Wide enough for three digits and the unit, narrow enough to read as a blank. */
+.pc-lesson__work .pc-answer__field { flex: 0 0 auto; width: 11rem; }
+
+.pc-lesson__work .pc-answer__row { align-items: center; }
+
+.pc-lesson__work .pc-answer__hint {
+    max-width: 24rem;
+    font-size: var(--pc-text-base);
+    text-align: center;
+    min-height: 1.5em;
+}
+
+/* ------------------------------------------------------------------ chrome */
+
+.pc-lesson__status {
+    position: absolute;
+    right: var(--pc-space-5);
+    bottom: var(--pc-space-5);
+
+    display: flex;
+    align-items: center;
+    gap: var(--pc-space-4);
+}
+
+.pc-lesson__mode {
+    margin: 0;
+    font-family: var(--pc-font-display);
+    font-size: var(--pc-text-sm);
+    font-weight: 800;
+    color: var(--pc-ink-soft);
+    white-space: nowrap;
+}
+
+.pc-lesson__status .pc-progress { width: 12rem; }
+
+/* Position through ten puzzles only means something once they have started. */
+.pc-lesson__frame:not([data-mode='freeplay']) .pc-lesson__status .pc-progress {
+    display: none;
+}
+
+.pc-lesson__footer {
+    position: absolute;
+    left: var(--pc-space-5);
+    bottom: var(--pc-space-5);
+
     display: flex;
     gap: var(--pc-space-3);
-    flex-wrap: wrap;
     align-items: center;
 }
 
-.pc-lesson__dev {
-    margin-left: auto;
+.pc-lesson__exit {
+    min-height: 2.5rem;
+    padding: 0 var(--pc-space-4);
     font-size: var(--pc-text-sm);
-    opacity: 0.75;
+    border-radius: var(--pc-radius-pill);
+    opacity: 0.8;
+}
+
+.pc-lesson__exit:hover { opacity: 1; }
+
+/*
+ * Browsers refuse to speak before the first user gesture, so the lesson opens
+ * behind this rather than auto-playing into silence.
+ */
+.pc-lesson__start {
+    position: absolute;
+    inset: 0;
+    z-index: 2;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    border-radius: var(--pc-radius);
+    background: color-mix(in srgb, var(--pc-sky) 94%, transparent);
+}
+
+.pc-lesson__start-card {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: var(--pc-space-4);
+
+    max-width: 34rem;
+    text-align: center;
 }

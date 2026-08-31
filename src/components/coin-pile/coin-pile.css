@@ -1,0 +1,27 @@
+.pc-pile {
+    position: relative;
+    display: inline-block;
+}
+
+.pc-pile__coins {
+    display: grid;
+    grid-template-columns: repeat(var(--pc-pile-columns, 5), auto);
+    gap: var(--pc-pile-gap, 5px);
+    justify-content: center;
+    justify-items: center;
+    align-items: center;
+}
+
+/*
+ * The boundary round the whole pile. Positioned outside the coins and out of
+ * the layout entirely, so drawing it cannot nudge a single coin sideways.
+ */
+.pc-pile__box {
+    position: absolute;
+    inset: calc(-1 * var(--pc-space-3, 0.75rem));
+    border: 3px dashed var(--pc-blue-ink, #2668B0);
+    border-radius: var(--pc-radius, 18px);
+    pointer-events: none;
+}
+
+.pc-pile__box[hidden] { display: none; }

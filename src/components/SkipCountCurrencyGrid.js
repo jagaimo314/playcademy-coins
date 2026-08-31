@@ -81,7 +81,12 @@ export class SkipCountCurrencyGrid extends SkipCountGrid {
 
     describe() {
         const counted = describeCount(this.numCoins, this.denomination)
-        return `${this.numRows} by ${this.numCols} grid, counting ${counted} by ${formatCents(this.value)}`
+
+        return [
+            `${this.numRows} by ${this.numCols} grid`,
+            `counting ${counted} by ${formatCents(this.value)}`,
+            this.describeAnswer(),
+        ].filter(Boolean).join(', ')
     }
 
     draw() {
