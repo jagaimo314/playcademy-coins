@@ -1,0 +1,287 @@
+<title>Coin Sums Take-Home</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@600;700;800&family=Nunito:ital,wght@0,400;0,600;0,700;0,800;1,400&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+  :root {
+    --sky: #E9F2FB;
+    --sky-deep: #D9E7F7;
+    --ink: #1B2336;
+    --ink-soft: #47536C;
+    --white: #FFFFFF;
+    --blue: #4998ED;
+    --blue-deep: #3180D5;
+    --blue-ink: #2668B0;
+    --green: #7CC962;
+    --green-deep: #69B352;
+    --green-ink: #41762F;
+    --gold: #F2BF58;
+    --gold-deep: #E7A937;
+    --shadow: 4px 5px 0 rgba(27, 35, 54, 0.9);
+    --shadow-sm: 3px 3px 0 rgba(27, 35, 54, 0.9);
+  }
+
+  * { box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+  body {
+    background: var(--sky);
+    color: var(--ink);
+    font-family: 'Nunito', 'Avenir Next', 'Trebuchet MS', sans-serif;
+    font-size: 1.05rem;
+    line-height: 1.65;
+    margin: 0;
+    padding: 0 1.25rem 4rem;
+  }
+  .wrap { max-width: 72ch; margin: 0 auto; }
+
+  h1, h2, h3 {
+    font-family: 'Baloo 2', 'Arial Rounded MT Bold', 'Avenir Next', sans-serif;
+    line-height: 1.08;
+    margin: 0;
+    text-wrap: balance;
+    color: var(--ink);
+  }
+  h1 { font-size: clamp(2.5rem, 6.5vw, 3.9rem); font-weight: 800; }
+  h2 { font-size: clamp(1.55rem, 3.2vw, 2rem); font-weight: 800; margin-top: 0.3rem; }
+  h3 { font-size: 1.2rem; font-weight: 700; margin-top: 1.4rem; }
+  p { margin: 0.85rem 0; }
+  strong { font-weight: 800; }
+
+  code {
+    font-family: 'IBM Plex Mono', 'SF Mono', Menlo, monospace;
+    font-size: 0.84em;
+    background: var(--sky-deep);
+    border: 1.5px solid rgba(27,35,54,0.3);
+    border-radius: 6px;
+    padding: 0.06em 0.35em;
+  }
+
+  /* nav */
+  nav { display: flex; align-items: center; gap: 1rem; padding: 1.4rem 0 0.8rem; flex-wrap: wrap; }
+  .brand { display: flex; align-items: center; gap: 0.65rem; }
+  .brand svg.logo { width: 52px; height: 52px; display: block; filter: drop-shadow(2px 2px 0 rgba(27,35,54,0.2)); }
+  .wordmark {
+    font-family: 'Baloo 2', sans-serif; font-weight: 800;
+    font-size: 1.85rem; color: var(--ink); line-height: 1;
+  }
+  .wordmark .c1 { color: var(--blue-deep); }
+  .wordmark .c2 { color: var(--green-deep); }
+  .wordmark .c3 { color: var(--blue); }
+  .wordmark .c4 { color: var(--green-deep); }
+
+  /* hero */
+  header.hero { position: relative; padding: 2.8rem 0 2.2rem; min-height: 26.5rem; }
+  .eyebrow {
+    font-weight: 800; font-size: 0.78rem; letter-spacing: 0.16em; text-transform: uppercase;
+    color: var(--ink-soft); margin-bottom: 0.8rem;
+  }
+  .hero h1 .under { position: relative; white-space: nowrap; }
+  .hero h1 .under svg { position: absolute; left: 0; right: 0; bottom: -0.16em; width: 100%; height: 0.28em; }
+  .hero .subtitle { font-size: 1.15rem; max-width: 50ch; color: var(--ink-soft); font-weight: 600; margin-top: 2.2rem; }
+  .deco { position: absolute; pointer-events: none; }
+  .deco.globe { top: 7.8rem; right: -0.6rem; width: 170px; }
+  .deco.globe svg { width: 100%; height: auto; display: block; filter: drop-shadow(4px 6px 0 rgba(27,35,54,0.18)); }
+  .deco.cloud1 { top: 2.4rem; right: 2.5rem; width: 96px; }
+  .deco.coin1 { top: 19.2rem; right: 6.8rem; width: 34px; transform: rotate(-12deg); }
+  .deco.coin2 { top: 21.2rem; right: 4.4rem; width: 38px; transform: rotate(8deg); }
+  .deco.coin3 { top: 19.4rem; right: 1.6rem; width: 30px; transform: rotate(18deg); }
+  .deco.coin4 { top: 22.4rem; right: 0.2rem; width: 42px; transform: rotate(-6deg); }
+  @keyframes bob { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-9px); } }
+  @media (max-width: 900px) {
+    .deco.cloud1, .deco.coin1, .deco.coin2, .deco.coin3, .deco.coin4 { display: none; }
+    .deco.globe { width: 105px; top: 0.2rem; right: 0; }
+  }
+
+  @keyframes pop { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: none; } }
+  .hero > * { animation: pop 0.55s cubic-bezier(0.2, 0.7, 0.3, 1.1) both; }
+  .hero > *:nth-child(2) { animation-delay: 0.07s; }
+  .hero > *:nth-child(3) { animation-delay: 0.14s; }
+  .hero > *:nth-child(4) { animation-delay: 0.21s; }
+  .hero .deco { animation: pop 0.7s 0.35s cubic-bezier(0.2, 0.7, 0.3, 1.2) both; }
+  .hero .deco.globe { animation: pop 0.7s 0.35s cubic-bezier(0.2, 0.7, 0.3, 1.2) both, bob 6s 1.05s ease-in-out infinite; }
+  @media (prefers-reduced-motion: reduce) { * { animation: none !important; transition: none !important; } }
+
+  /* sections */
+  section { margin: 3rem 0; position: relative; }
+  .kicker {
+    display: inline-flex; align-items: center;
+    font-family: 'Baloo 2', sans-serif; font-weight: 700; font-size: 0.82rem;
+    letter-spacing: 0.12em; text-transform: uppercase;
+    background: var(--ink); color: var(--white);
+    border-radius: 999px; padding: 0.24em 1em; margin-bottom: 0.8rem;
+  }
+  .kicker.blue { background: var(--blue-deep); }
+  .kicker.green { background: var(--green-deep); }
+  .kicker.gold { background: var(--gold-deep); }
+
+  ul { padding-left: 1.5rem; margin: 0.9rem 0; }
+  ul > li { margin: 0.45rem 0; }
+  ul > li::marker { color: var(--blue-deep); }
+
+  .callout {
+    background: #FBEECB; border: 2.5px solid var(--ink); border-radius: 18px;
+    padding: 1rem 1.3rem; margin: 1.5rem 0; box-shadow: var(--shadow);
+  }
+  .callout p { margin: 0.3rem 0; }
+  .tape {
+    display: inline-block; font-family: 'Baloo 2', sans-serif; font-weight: 800;
+    font-size: 0.76rem; letter-spacing: 0.1em; text-transform: uppercase;
+    background: var(--ink); color: var(--white); border: 2px solid var(--ink);
+    border-radius: 8px; padding: 0.14em 0.7em; transform: rotate(-2deg);
+    margin-bottom: 0.45rem; box-shadow: 2px 2px 0 rgba(27,35,54,0.35);
+  }
+
+
+  .checklist { list-style: none; padding-left: 0; }
+  .checklist li { padding-left: 2rem; position: relative; margin: 0.55rem 0; font-weight: 600; }
+  .checklist li::before {
+    content: ""; position: absolute; left: 0; top: 0.28rem;
+    width: 1rem; height: 1rem; border: 2.5px solid var(--ink); border-radius: 6px;
+    background: var(--white); box-shadow: 2px 2px 0 rgba(27,35,54,0.5);
+  }
+  .checklist li::marker { content: none; }
+</style>
+
+<div class="wrap">
+
+  <nav>
+    <span class="brand">
+      <svg class="logo" role="img" aria-label="Playcademy logo" xmlns="http://www.w3.org/2000/svg" viewBox="176 270 1384 1384">
+  <!-- sticker outline: outer silhouettes inflated by a fat white stroke -->
+  <g fill="#FFFFFF" stroke="#FFFFFF" stroke-width="80" stroke-linejoin="round" stroke-linecap="round">
+    <circle cx="980.5" cy="1107.6" r="453.0"/>
+    <path d="M 323.2 707.6 C 473.8 600.4 634.3 482.2 799.9 377.5 C 839.2 352.7 894.1 364.5 939.5 372.0 C 1093.0 396.8 1246.5 421.4 1399.8 446.5 L 1422.4 450.2 A 46 46 0 0 1 1441.5 533.1 L 1259.4 662.4 L 949.0 882.7 L 341.0 785.7 A 43.4 43.4 0 0 1 323.2 707.6 Z"/>
+    <path d="M 554.5 758.0 L 554.5 878.0 Q 554.5 921.0 605.0 923.5 A 1514.1 1514.1 0 0 0 1252.0 787.0 Q 1286.0 770.0 1284.0 741.0 C 1281.0 718.0 1249.5 620.6 1241.9 611.3 Q 1218.8 582.8 1194.9 577.1 A 716.9 716.9 0 0 0 571.8 722.2 Q 554.5 736.5 554.5 758.0 Z"/>
+    <path d="M 385.5 950 L 385.5 665.5 A 65 65 0 0 1 468.9 603.2 L 443.0 621.9 Q 430.0 631.3 430.0 660.0 L 430.0 950 Z"/>
+    <circle cx="409.0" cy="984.0" r="63.0"/>
+    <path d="M 374 1030 L 447 1030 C 460 1042 470 1090 481 1145 C 488 1180 489 1205 486 1222 Q 480 1252 446 1254 L 375 1254 Q 341 1252 335 1222 C 332 1205 333 1180 340 1145 C 351 1090 361 1042 374 1030 Z"/>
+  </g>
+  <defs>
+    <clipPath id="globeClip"><circle cx="980.5" cy="1107.6" r="453.0"/></clipPath>
+    <clipPath id="dayClip"><circle cx="949.5" cy="1012.0" r="387.0"/></clipPath>
+    <clipPath id="boardClip"><path d="M 323.2 707.6 C 473.8 600.4 634.3 482.2 799.9 377.5 C 839.2 352.7 894.1 364.5 939.5 372.0 C 1093.0 396.8 1246.5 421.4 1399.8 446.5 L 1422.4 450.2 A 46 46 0 0 1 1441.5 533.1 L 1259.4 662.4 L 949.0 882.7 L 341.0 785.7 A 43.4 43.4 0 0 1 323.2 707.6 Z"/></clipPath>
+  </defs>
+  <!-- globe: dark (shade) layer below, lit day layer on top -->
+  <g clip-path="url(#globeClip)">
+    <circle fill="#3180D5" cx="980.5" cy="1107.6" r="453.0"/>
+    <path fill="#69B352" d="M 1155.2 831.9 Q 1155.2 803.9 1183.2 803.9 L 1216.1 803.9 Q 1244.1 803.9 1244.1 831.9 L 1244.1 962.1 Q 1244.1 990.1 1216.1 990.1 L 1183.2 990.1 Q 1155.2 990.1 1155.2 1018.1 L 1155.2 1148.2 Q 1155.2 1176.2 1183.2 1176.2 L 1216.1 1176.2 Q 1244.1 1176.2 1244.1 1204.2 L 1244.1 1241.3 Q 1244.1 1269.3 1272.1 1269.3 L 1304.9 1269.3 Q 1332.9 1269.3 1332.9 1297.3 L 1332.9 1334.3 Q 1332.9 1362.3 1304.9 1362.3 L 1183.2 1362.3 Q 1155.2 1362.3 1155.2 1334.3 L 1155.2 1297.3 Q 1155.2 1269.3 1127.2 1269.3 L 1094.4 1269.3 Q 1066.4 1269.3 1066.4 1241.3 L 1066.4 1204.2 Q 1066.4 1176.2 1038.4 1176.2 L 1005.5 1176.2 Q 977.5 1176.2 977.5 1148.2 L 977.5 1111.1 Q 977.5 1083.1 949.5 1083.1 L 916.7 1083.1 Q 888.7 1083.1 888.7 1055.1 L 888.7 1018.1 Q 888.7 990.1 916.7 990.1 L 949.5 990.1 Q 977.5 990.1 977.5 962.1 L 977.5 925.0 Q 977.5 897.0 1005.5 897.0 L 1127.2 897.0 Q 1155.2 897.0 1155.2 869.0 Z M 500.0 888.0 Q 500.0 860.0 528.0 860.0 L 771.8 860.0 Q 799.8 860.0 799.8 888.0 L 799.8 962.1 Q 799.8 990.1 771.8 990.1 L 739.0 990.1 Q 711.0 990.1 711.0 1018.1 L 711.0 1241.3 Q 711.0 1269.3 683.0 1269.3 L 650.1 1269.3 Q 622.1 1269.3 622.1 1241.3 L 622.1 1204.2 Q 622.1 1176.2 594.1 1176.2 L 528.0 1176.2 Q 500.0 1176.2 500.0 1148.2 Z M 888.7 1390.3 Q 888.7 1362.3 916.7 1362.3 L 949.5 1362.3 Q 977.5 1362.3 977.5 1390.3 L 977.5 1427.4 Q 977.5 1455.4 1005.5 1455.4 L 1127.2 1455.4 Q 1155.2 1455.4 1155.2 1483.4 L 1155.2 1572.0 Q 1155.2 1600.0 1127.2 1600.0 L 827.8 1600.0 Q 799.8 1600.0 799.8 1572.0 L 799.8 1483.4 Q 799.8 1455.4 827.8 1455.4 L 860.7 1455.4 Q 888.7 1455.4 888.7 1427.4 Z"/>
+  </g>
+  <g clip-path="url(#dayClip)">
+    <circle fill="#4998ED" cx="949.5" cy="1012.0" r="387.0"/>
+    <path fill="#7CC962" d="M 1155.2 831.9 Q 1155.2 803.9 1183.2 803.9 L 1216.1 803.9 Q 1244.1 803.9 1244.1 831.9 L 1244.1 962.1 Q 1244.1 990.1 1216.1 990.1 L 1183.2 990.1 Q 1155.2 990.1 1155.2 1018.1 L 1155.2 1148.2 Q 1155.2 1176.2 1183.2 1176.2 L 1216.1 1176.2 Q 1244.1 1176.2 1244.1 1204.2 L 1244.1 1241.3 Q 1244.1 1269.3 1272.1 1269.3 L 1304.9 1269.3 Q 1332.9 1269.3 1332.9 1297.3 L 1332.9 1334.3 Q 1332.9 1362.3 1304.9 1362.3 L 1183.2 1362.3 Q 1155.2 1362.3 1155.2 1334.3 L 1155.2 1297.3 Q 1155.2 1269.3 1127.2 1269.3 L 1094.4 1269.3 Q 1066.4 1269.3 1066.4 1241.3 L 1066.4 1204.2 Q 1066.4 1176.2 1038.4 1176.2 L 1005.5 1176.2 Q 977.5 1176.2 977.5 1148.2 L 977.5 1111.1 Q 977.5 1083.1 949.5 1083.1 L 916.7 1083.1 Q 888.7 1083.1 888.7 1055.1 L 888.7 1018.1 Q 888.7 990.1 916.7 990.1 L 949.5 990.1 Q 977.5 990.1 977.5 962.1 L 977.5 925.0 Q 977.5 897.0 1005.5 897.0 L 1127.2 897.0 Q 1155.2 897.0 1155.2 869.0 Z M 500.0 888.0 Q 500.0 860.0 528.0 860.0 L 771.8 860.0 Q 799.8 860.0 799.8 888.0 L 799.8 962.1 Q 799.8 990.1 771.8 990.1 L 739.0 990.1 Q 711.0 990.1 711.0 1018.1 L 711.0 1241.3 Q 711.0 1269.3 683.0 1269.3 L 650.1 1269.3 Q 622.1 1269.3 622.1 1241.3 L 622.1 1204.2 Q 622.1 1176.2 594.1 1176.2 L 528.0 1176.2 Q 500.0 1176.2 500.0 1148.2 Z M 888.7 1390.3 Q 888.7 1362.3 916.7 1362.3 L 949.5 1362.3 Q 977.5 1362.3 977.5 1390.3 L 977.5 1427.4 Q 977.5 1455.4 1005.5 1455.4 L 1127.2 1455.4 Q 1155.2 1455.4 1155.2 1483.4 L 1155.2 1572.0 Q 1155.2 1600.0 1127.2 1600.0 L 827.8 1600.0 Q 799.8 1600.0 799.8 1572.0 L 799.8 1483.4 Q 799.8 1455.4 827.8 1455.4 L 860.7 1455.4 Q 888.7 1455.4 888.7 1427.4 Z"/>
+  </g>
+  <!-- mortarboard -->
+  <path fill="#32374D" d="M 323.2 707.6 C 473.8 600.4 634.3 482.2 799.9 377.5 C 839.2 352.7 894.1 364.5 939.5 372.0 C 1093.0 396.8 1246.5 421.4 1399.8 446.5 L 1422.4 450.2 A 46 46 0 0 1 1441.5 533.1 L 1259.4 662.4 L 949.0 882.7 L 341.0 785.7 A 43.4 43.4 0 0 1 323.2 707.6 Z"/>
+  <g clip-path="url(#boardClip)"><path fill="#1B2336" d="M 255.0 802.0 L 384.0 706.0 L 436.2 669.1 C 557.4 587.0 676.3 499.2 798.9 420.5 C 837.9 395.5 893.2 401.6 940.0 409.0 C 1093.3 433.3 1246.0 458.9 1399.8 482.0 L 1426.7 486.1 A 28 28 0 0 1 1439.1 536.4 L 952.0 893.0 L 261.0 783.0 Z"/></g>
+  <path fill="#32374D" d="M 554.5 758.0 L 554.5 878.0 Q 554.5 921.0 605.0 923.5 A 1514.1 1514.1 0 0 0 1252.0 787.0 Q 1286.0 770.0 1284.0 741.0 C 1281.0 718.0 1249.5 620.6 1241.9 611.3 Q 1218.8 582.8 1194.9 577.1 A 716.9 716.9 0 0 0 571.8 722.2 Q 554.5 736.5 554.5 758.0 Z"/>
+  <!-- tassel -->
+  <path fill="#F2BF58" d="M 385.5 950 L 385.5 665.5 A 65 65 0 0 1 468.9 603.2 L 443.0 621.9 Q 430.0 631.3 430.0 660.0 L 430.0 950 Z"/>
+  <path fill="#E7A937" d="M 374 1030 L 447 1030 C 460 1042 470 1090 481 1145 C 488 1180 489 1205 486 1222 Q 480 1252 446 1254 L 375 1254 Q 341 1252 335 1222 C 332 1205 333 1180 340 1145 C 351 1090 361 1042 374 1030 Z"/>
+  <circle fill="#F2BF58" cx="409.0" cy="984.0" r="63.0"/>
+</svg>
+      <span class="wordmark">P<span class="c1">l</span>ay<span class="c2">c</span>ad<span class="c3">e</span>m<span class="c4">y</span></span>
+    </span>
+  </nav>
+
+  <header class="hero">
+    <div class="eyebrow">Engineering take-home</div>
+    <h1>Teach kids<br><span class="under">to sum coins<svg viewBox="0 0 300 14" preserveAspectRatio="none" aria-hidden="true"><path d="M4 9 Q 40 3 75 8 T 150 8 T 225 7 T 296 9" fill="none" stroke="#E7A937" stroke-width="5" stroke-linecap="round"/></svg></span></h1>
+    <p class="subtitle">Use Claude Code to build and host a small web app that teaches kids to find the sum of coins: map the skill as a mini <strong>knowledge graph</strong>, teach one <strong>lesson</strong> from it, and build a <strong>multiplayer practice game</strong>.</p>
+    <div class="deco globe"><svg aria-hidden="true" xmlns="http://www.w3.org/2000/svg" viewBox="176 270 1384 1384">
+  <!-- sticker outline: outer silhouettes inflated by a fat white stroke -->
+  <g fill="#FFFFFF" stroke="#FFFFFF" stroke-width="80" stroke-linejoin="round" stroke-linecap="round">
+    <circle cx="980.5" cy="1107.6" r="453.0"/>
+    <path d="M 323.2 707.6 C 473.8 600.4 634.3 482.2 799.9 377.5 C 839.2 352.7 894.1 364.5 939.5 372.0 C 1093.0 396.8 1246.5 421.4 1399.8 446.5 L 1422.4 450.2 A 46 46 0 0 1 1441.5 533.1 L 1259.4 662.4 L 949.0 882.7 L 341.0 785.7 A 43.4 43.4 0 0 1 323.2 707.6 Z"/>
+    <path d="M 554.5 758.0 L 554.5 878.0 Q 554.5 921.0 605.0 923.5 A 1514.1 1514.1 0 0 0 1252.0 787.0 Q 1286.0 770.0 1284.0 741.0 C 1281.0 718.0 1249.5 620.6 1241.9 611.3 Q 1218.8 582.8 1194.9 577.1 A 716.9 716.9 0 0 0 571.8 722.2 Q 554.5 736.5 554.5 758.0 Z"/>
+    <path d="M 385.5 950 L 385.5 665.5 A 65 65 0 0 1 468.9 603.2 L 443.0 621.9 Q 430.0 631.3 430.0 660.0 L 430.0 950 Z"/>
+    <circle cx="409.0" cy="984.0" r="63.0"/>
+    <path d="M 374 1030 L 447 1030 C 460 1042 470 1090 481 1145 C 488 1180 489 1205 486 1222 Q 480 1252 446 1254 L 375 1254 Q 341 1252 335 1222 C 332 1205 333 1180 340 1145 C 351 1090 361 1042 374 1030 Z"/>
+  </g>
+  <defs>
+    <clipPath id="globeClip"><circle cx="980.5" cy="1107.6" r="453.0"/></clipPath>
+    <clipPath id="dayClip"><circle cx="949.5" cy="1012.0" r="387.0"/></clipPath>
+    <clipPath id="boardClip"><path d="M 323.2 707.6 C 473.8 600.4 634.3 482.2 799.9 377.5 C 839.2 352.7 894.1 364.5 939.5 372.0 C 1093.0 396.8 1246.5 421.4 1399.8 446.5 L 1422.4 450.2 A 46 46 0 0 1 1441.5 533.1 L 1259.4 662.4 L 949.0 882.7 L 341.0 785.7 A 43.4 43.4 0 0 1 323.2 707.6 Z"/></clipPath>
+  </defs>
+  <!-- globe: dark (shade) layer below, lit day layer on top -->
+  <g clip-path="url(#globeClip)">
+    <circle fill="#3180D5" cx="980.5" cy="1107.6" r="453.0"/>
+    <path fill="#69B352" d="M 1155.2 831.9 Q 1155.2 803.9 1183.2 803.9 L 1216.1 803.9 Q 1244.1 803.9 1244.1 831.9 L 1244.1 962.1 Q 1244.1 990.1 1216.1 990.1 L 1183.2 990.1 Q 1155.2 990.1 1155.2 1018.1 L 1155.2 1148.2 Q 1155.2 1176.2 1183.2 1176.2 L 1216.1 1176.2 Q 1244.1 1176.2 1244.1 1204.2 L 1244.1 1241.3 Q 1244.1 1269.3 1272.1 1269.3 L 1304.9 1269.3 Q 1332.9 1269.3 1332.9 1297.3 L 1332.9 1334.3 Q 1332.9 1362.3 1304.9 1362.3 L 1183.2 1362.3 Q 1155.2 1362.3 1155.2 1334.3 L 1155.2 1297.3 Q 1155.2 1269.3 1127.2 1269.3 L 1094.4 1269.3 Q 1066.4 1269.3 1066.4 1241.3 L 1066.4 1204.2 Q 1066.4 1176.2 1038.4 1176.2 L 1005.5 1176.2 Q 977.5 1176.2 977.5 1148.2 L 977.5 1111.1 Q 977.5 1083.1 949.5 1083.1 L 916.7 1083.1 Q 888.7 1083.1 888.7 1055.1 L 888.7 1018.1 Q 888.7 990.1 916.7 990.1 L 949.5 990.1 Q 977.5 990.1 977.5 962.1 L 977.5 925.0 Q 977.5 897.0 1005.5 897.0 L 1127.2 897.0 Q 1155.2 897.0 1155.2 869.0 Z M 500.0 888.0 Q 500.0 860.0 528.0 860.0 L 771.8 860.0 Q 799.8 860.0 799.8 888.0 L 799.8 962.1 Q 799.8 990.1 771.8 990.1 L 739.0 990.1 Q 711.0 990.1 711.0 1018.1 L 711.0 1241.3 Q 711.0 1269.3 683.0 1269.3 L 650.1 1269.3 Q 622.1 1269.3 622.1 1241.3 L 622.1 1204.2 Q 622.1 1176.2 594.1 1176.2 L 528.0 1176.2 Q 500.0 1176.2 500.0 1148.2 Z M 888.7 1390.3 Q 888.7 1362.3 916.7 1362.3 L 949.5 1362.3 Q 977.5 1362.3 977.5 1390.3 L 977.5 1427.4 Q 977.5 1455.4 1005.5 1455.4 L 1127.2 1455.4 Q 1155.2 1455.4 1155.2 1483.4 L 1155.2 1572.0 Q 1155.2 1600.0 1127.2 1600.0 L 827.8 1600.0 Q 799.8 1600.0 799.8 1572.0 L 799.8 1483.4 Q 799.8 1455.4 827.8 1455.4 L 860.7 1455.4 Q 888.7 1455.4 888.7 1427.4 Z"/>
+  </g>
+  <g clip-path="url(#dayClip)">
+    <circle fill="#4998ED" cx="949.5" cy="1012.0" r="387.0"/>
+    <path fill="#7CC962" d="M 1155.2 831.9 Q 1155.2 803.9 1183.2 803.9 L 1216.1 803.9 Q 1244.1 803.9 1244.1 831.9 L 1244.1 962.1 Q 1244.1 990.1 1216.1 990.1 L 1183.2 990.1 Q 1155.2 990.1 1155.2 1018.1 L 1155.2 1148.2 Q 1155.2 1176.2 1183.2 1176.2 L 1216.1 1176.2 Q 1244.1 1176.2 1244.1 1204.2 L 1244.1 1241.3 Q 1244.1 1269.3 1272.1 1269.3 L 1304.9 1269.3 Q 1332.9 1269.3 1332.9 1297.3 L 1332.9 1334.3 Q 1332.9 1362.3 1304.9 1362.3 L 1183.2 1362.3 Q 1155.2 1362.3 1155.2 1334.3 L 1155.2 1297.3 Q 1155.2 1269.3 1127.2 1269.3 L 1094.4 1269.3 Q 1066.4 1269.3 1066.4 1241.3 L 1066.4 1204.2 Q 1066.4 1176.2 1038.4 1176.2 L 1005.5 1176.2 Q 977.5 1176.2 977.5 1148.2 L 977.5 1111.1 Q 977.5 1083.1 949.5 1083.1 L 916.7 1083.1 Q 888.7 1083.1 888.7 1055.1 L 888.7 1018.1 Q 888.7 990.1 916.7 990.1 L 949.5 990.1 Q 977.5 990.1 977.5 962.1 L 977.5 925.0 Q 977.5 897.0 1005.5 897.0 L 1127.2 897.0 Q 1155.2 897.0 1155.2 869.0 Z M 500.0 888.0 Q 500.0 860.0 528.0 860.0 L 771.8 860.0 Q 799.8 860.0 799.8 888.0 L 799.8 962.1 Q 799.8 990.1 771.8 990.1 L 739.0 990.1 Q 711.0 990.1 711.0 1018.1 L 711.0 1241.3 Q 711.0 1269.3 683.0 1269.3 L 650.1 1269.3 Q 622.1 1269.3 622.1 1241.3 L 622.1 1204.2 Q 622.1 1176.2 594.1 1176.2 L 528.0 1176.2 Q 500.0 1176.2 500.0 1148.2 Z M 888.7 1390.3 Q 888.7 1362.3 916.7 1362.3 L 949.5 1362.3 Q 977.5 1362.3 977.5 1390.3 L 977.5 1427.4 Q 977.5 1455.4 1005.5 1455.4 L 1127.2 1455.4 Q 1155.2 1455.4 1155.2 1483.4 L 1155.2 1572.0 Q 1155.2 1600.0 1127.2 1600.0 L 827.8 1600.0 Q 799.8 1600.0 799.8 1572.0 L 799.8 1483.4 Q 799.8 1455.4 827.8 1455.4 L 860.7 1455.4 Q 888.7 1455.4 888.7 1427.4 Z"/>
+  </g>
+  <!-- mortarboard -->
+  <path fill="#32374D" d="M 323.2 707.6 C 473.8 600.4 634.3 482.2 799.9 377.5 C 839.2 352.7 894.1 364.5 939.5 372.0 C 1093.0 396.8 1246.5 421.4 1399.8 446.5 L 1422.4 450.2 A 46 46 0 0 1 1441.5 533.1 L 1259.4 662.4 L 949.0 882.7 L 341.0 785.7 A 43.4 43.4 0 0 1 323.2 707.6 Z"/>
+  <g clip-path="url(#boardClip)"><path fill="#1B2336" d="M 255.0 802.0 L 384.0 706.0 L 436.2 669.1 C 557.4 587.0 676.3 499.2 798.9 420.5 C 837.9 395.5 893.2 401.6 940.0 409.0 C 1093.3 433.3 1246.0 458.9 1399.8 482.0 L 1426.7 486.1 A 28 28 0 0 1 1439.1 536.4 L 952.0 893.0 L 261.0 783.0 Z"/></g>
+  <path fill="#32374D" d="M 554.5 758.0 L 554.5 878.0 Q 554.5 921.0 605.0 923.5 A 1514.1 1514.1 0 0 0 1252.0 787.0 Q 1286.0 770.0 1284.0 741.0 C 1281.0 718.0 1249.5 620.6 1241.9 611.3 Q 1218.8 582.8 1194.9 577.1 A 716.9 716.9 0 0 0 571.8 722.2 Q 554.5 736.5 554.5 758.0 Z"/>
+  <!-- tassel -->
+  <path fill="#F2BF58" d="M 385.5 950 L 385.5 665.5 A 65 65 0 0 1 468.9 603.2 L 443.0 621.9 Q 430.0 631.3 430.0 660.0 L 430.0 950 Z"/>
+  <path fill="#E7A937" d="M 374 1030 L 447 1030 C 460 1042 470 1090 481 1145 C 488 1180 489 1205 486 1222 Q 480 1252 446 1254 L 375 1254 Q 341 1252 335 1222 C 332 1205 333 1180 340 1145 C 351 1090 361 1042 374 1030 Z"/>
+  <circle fill="#F2BF58" cx="409.0" cy="984.0" r="63.0"/>
+</svg></div>
+    <svg class="deco cloud1" viewBox="0 0 130 66" aria-hidden="true"><path d="M32 52 a16 16 0 0 1 -2 -31 a22 22 0 0 1 42 -8 a18 18 0 0 1 30 12 a14 14 0 0 1 -4 27 Z" fill="#FFFFFF" stroke="#1B2336" stroke-width="3" stroke-linejoin="round"/></svg>
+    <svg class="deco coin1" viewBox="0 0 44 44" aria-hidden="true"><circle cx="22" cy="22" r="19" fill="#F2BF58" stroke="#1B2336" stroke-width="2.5"/><circle cx="22" cy="22" r="13.5" fill="none" stroke="#E7A937" stroke-width="2" stroke-dasharray="4 3"/><text x="22" y="27.5" text-anchor="middle" font-family="'Baloo 2', 'Avenir Next', sans-serif" font-weight="800" font-size="14" fill="#1B2336">1&#162;</text></svg>
+    <svg class="deco coin2" viewBox="0 0 44 44" aria-hidden="true"><circle cx="22" cy="22" r="19" fill="#F2BF58" stroke="#1B2336" stroke-width="2.5"/><circle cx="22" cy="22" r="13.5" fill="none" stroke="#E7A937" stroke-width="2" stroke-dasharray="4 3"/><text x="22" y="27.5" text-anchor="middle" font-family="'Baloo 2', 'Avenir Next', sans-serif" font-weight="800" font-size="14" fill="#1B2336">5&#162;</text></svg>
+    <svg class="deco coin3" viewBox="0 0 44 44" aria-hidden="true"><circle cx="22" cy="22" r="19" fill="#F2BF58" stroke="#1B2336" stroke-width="2.5"/><circle cx="22" cy="22" r="13.5" fill="none" stroke="#E7A937" stroke-width="2" stroke-dasharray="4 3"/><text x="22" y="27.5" text-anchor="middle" font-family="'Baloo 2', 'Avenir Next', sans-serif" font-weight="800" font-size="12" fill="#1B2336">10&#162;</text></svg>
+    <svg class="deco coin4" viewBox="0 0 44 44" aria-hidden="true"><circle cx="22" cy="22" r="19" fill="#F2BF58" stroke="#1B2336" stroke-width="2.5"/><circle cx="22" cy="22" r="13.5" fill="none" stroke="#E7A937" stroke-width="2" stroke-dasharray="4 3"/><text x="22" y="27.5" text-anchor="middle" font-family="'Baloo 2', 'Avenir Next', sans-serif" font-weight="800" font-size="12" fill="#1B2336">25&#162;</text></svg>
+  </header>
+
+  <section>
+    <span class="kicker">The goal</span>
+    <h2>A kid who can total a handful of coins</h2>
+    <p>By the end, a K-2 kid can look at a handful of coins (pennies, nickels, dimes, quarters) and say what it's worth. Dollar bills are excluded from this exercise.</p>
+    <div class="callout">
+      <span class="tape">Start from zero</span>
+      <p>Assume the student knows nothing: no numbers, no counting, no addition, no idea what a coin is. They can read, so leave reading and English out of scope.</p>
+    </div>
+    <p>The capstone sits around CCSS 2.MD.C.8; its prerequisites reach back through kindergarten counting and grade 1 addition.</p>
+  </section>
+
+  <section>
+    <span class="kicker gold">Part 1</span>
+    <h2>The knowledge graph</h2>
+    <p>Before you can teach the skill, map what it's made of. Build a mini knowledge graph from zero to "find the sum of a handful of coins":</p>
+    <ul>
+      <li>Each node is a <strong>knowledge component</strong>: one small, teachable piece (for example, "count objects to 10" or "know a dime is worth 10&#162;").</li>
+      <li>Edges are prerequisites: a KC depends only on KCs below it.</li>
+      <li>Pitch every KC for a K-2 kid: tiny steps, concrete before abstract.</li>
+      <li>Roughly 10 to 15 nodes is plenty.</li>
+    </ul>
+    <p>Ship the graph in the repo as a diagram or structured data, whichever is clearest.</p>
+  </section>
+
+  <section>
+    <span class="kicker blue">Part 2</span>
+    <h2>The lesson</h2>
+    <p>Choose one KC from your graph and build one complete lesson that teaches it. Assume the student has mastered its prerequisites and nothing else.</p>
+    <p>The lesson should be <strong>direct instruction</strong> and <strong>narrated</strong> (free TTS is fine).</p>
+    <p>End the lesson with <strong>10 problems</strong> that test mastery of the lesson. If the student fails, <strong>detect what they got wrong</strong> and where they need help in this lesson. You do not need to implement the remediation itself, just the detection.</p>
+    <p><strong>No multiple choice.</strong> All answers are typed responses. Assume the kid knows how to type.</p>
+  </section>
+
+  <section>
+    <span class="kicker green">Part 3</span>
+    <h2>Multiplayer practice</h2>
+    <p>A multiplayer game for summing coins, the top of your graph. It unlocks when the lesson is complete.</p>
+    <p>Two or more students: racing your friends at a cash register, working together at an amusement park to handle customers, whatever you like. A minimal backend or hosted realtime service is fine.</p>
+    <p><strong>Priorities:</strong> the graph, the lesson, and the multiplayer game are the core. Get all three working end to end before polishing anything else. Gamification is a plus, not a requirement.</p>
+  </section>
+
+  <section id="submit">
+    <span class="kicker blue">Submission</span>
+    <h2>Send back an email containing</h2>
+    <ul class="checklist">
+      <li>The hosted URL, playable start to finish</li>
+      <li>The repo with full git history, including your knowledge graph</li>
+      <li><code>LEARNING.pdf</code>: explains the knowledge graph, the KC breakdowns, and the lesson flow plus remediation</li>
+      <li><code>FRONTEND.pdf</code>: explains your frontend and gamification work (asset generation, UI development, architecture), showing not just that you can make a game but that you build proper frontend architecture</li>
+      <li><code>MULTIPLAYER.pdf</code>: explains the technical features of the backend and the multiplayer</li>
+      <li>The estimated time it took you, from start to deliverable</li>
+    </ul>
+    <h3>What we look for</h3>
+    <ul>
+      <li><strong>The graph and the lesson:</strong> your understanding of learning science, and a frontend that flows without logic errors.</li>
+      <li><strong>The multiplayer:</strong> it actually works, and you can explain how it works when we walk through it.</li>
+    </ul>
+  </section>
+
+</div>
