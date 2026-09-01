@@ -325,8 +325,8 @@ M0–M2 is the part that has to work. M3 onward is difficulty and durability.
 
 All client-side, and all needed before M1 pays off:
 
-- `views/bakery/game/` — belt, tray, hand panel, incinerator components. View-local, not
-  shared, per the dependency rule.
+- `src/components/` — belt, tray, hand panel, incinerator components. 
+  Built out as independent components to be used in the game.
 - A **hop animation per tray**, started on each `belt/advanced`. Await it with
   `animationSettled()` from `lib/dom.js`, never `animation.finished` — a backgrounded tab never
   settles the latter and the belt would deadlock. There is no interpolation buffer and no
