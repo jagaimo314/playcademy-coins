@@ -1,0 +1,99 @@
+/*
+ * Geometry comes in from JS as custom properties: the fit that sizes the coins
+ * has to know the border, the padding and the tab, so those numbers live there
+ * and this file only spends them. Do not hard-code a second copy here.
+ */
+.pc-wallet {
+    --pc-wallet-accent: var(--pc-blue);
+    --pc-wallet-accent-deep: var(--pc-blue-deep);
+
+    position: relative;
+    box-sizing: border-box;
+    width: var(--pc-wallet-width);
+    height: var(--pc-wallet-height);
+
+    /*
+     * The size is the contract the coin fit was computed against, so a flex
+     * parent does not get to shrink it — a wallet a pixel narrower than it was
+     * measured for is a wallet whose last coin is a pixel outside the box.
+     */
+    flex: none;
+
+    /* The thick colour-coded band is the whole identity of the panel. */
+    border: var(--pc-wallet-border) solid var(--pc-wallet-accent);
+    border-radius: var(--pc-radius);
+    background: var(--pc-white);
+    box-shadow: var(--pc-shadow);
+
+    /*
+     * The box is a promise: four of these tile the Bakery's base band, so a
+     * coin that overran would sit on top of the neighbouring player's hand.
+     * The fit should make this unnecessary — it is here for when it is not.
+     */
+    overflow: hidden;
+}
+
+/* The four slots the server assigns. Yellow is the palette's gold. */
+.pc-wallet--red { --pc-wallet-accent: var(--pc-red); --pc-wallet-accent-deep: var(--pc-red-deep); }
+.pc-wallet--green { --pc-wallet-accent: var(--pc-green); --pc-wallet-accent-deep: var(--pc-green-deep); }
+.pc-wallet--blue { --pc-wallet-accent: var(--pc-blue); --pc-wallet-accent-deep: var(--pc-blue-deep); }
+.pc-wallet--yellow { --pc-wallet-accent: var(--pc-gold); --pc-wallet-accent-deep: var(--pc-gold-deep); }
+
+/*
+ * The name tab. Tucked into the top-left corner *inside* the border rather than
+ * hung off the top edge, so the rendered panel is exactly the width and height
+ * the caller asked for and four of them line up on one baseline.
+ */
+.pc-wallet__tab {
+    position: absolute;
+    top: 0;
+    left: 0;
+    max-width: calc(100% - var(--pc-wallet-padding) * 2);
+    height: var(--pc-wallet-tab-height);
+
+    display: flex;
+    align-items: center;
+    padding: 0 var(--pc-space-3);
+
+    background: var(--pc-wallet-accent);
+    /* Square into the corner it shares with the border, rounded where it leaves it. */
+    border-radius: calc(var(--pc-radius) - var(--pc-wallet-border)) 0 var(--pc-radius-sm) 0;
+}
+
+.pc-wallet__name {
+    font-family: var(--pc-font-display);
+    font-size: var(--pc-text-sm);
+    font-weight: 800;
+    line-height: 1;
+    color: var(--pc-ink);
+
+    /* Names arrive off the wire; a long one shortens rather than stretching the tab. */
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+/*
+ * The hand. Rows are built in JS so they match the fit exactly — this only
+ * centres them. `--pc-coin-size` is set here, not on the root, so the tab's
+ * type is not dragged around by the coin scale.
+ */
+.pc-wallet__coins {
+    box-sizing: border-box;
+    height: 100%;
+    padding: calc(var(--pc-wallet-padding) + var(--pc-wallet-tab-height))
+             var(--pc-wallet-padding) var(--pc-wallet-padding);
+
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    gap: var(--pc-wallet-gap);
+}
+
+.pc-wallet__row {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--pc-wallet-gap);
+}

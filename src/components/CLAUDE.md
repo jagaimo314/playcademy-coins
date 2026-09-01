@@ -19,6 +19,7 @@ components report back through callbacks passed in (`onClick`, `onSubmit`, `onRe
 | `coin-pile/` | Rows of one denomination, plus the gestures the Lesson teaches with: a boundary round the pile, a boundary round one coin, flipping the pile to its value side and back. |
 | `conveyor-belt/` | The Bakery's belt: a band and an ordered row of slots, each holding at most one tray. Its only job is mapping a slot index into geometry — the server owns the occupancy. |
 | `conveyor-item/` | One tray on a belt: a graphic of baked goods over the price printed at its base. The goods are a placeholder square until there is real bakery art. |
+| `player-wallet/` | One Bakery player's hand: a colour-coded box with their name on a tab. Fixed width and height, coins scaled together to fit — see below. |
 | `answer-input/` | The typed-answer field. The brief forbids multiple choice, so this is how every answer is given. |
 | `narrator/` | Web Speech API wrapper. Always renders the spoken text as a caption too. |
 | `primary-button/` | The app's main button. A disabled one renders its reason. |
@@ -57,6 +58,26 @@ if (new.target === SkipCountCurrencyGrid) this.draw()
 
 Add a subclass and it needs the same guard with its own name — otherwise the parent draws
 first, calling your hooks before your fields exist.
+
+## The wallet fits its coins in JS, and that is on purpose
+
+`player-wallet` is the one component that computes its own layout in numbers rather than
+handing the job to CSS. Its box is fixed — four wallets tile the Bakery's base band, and a
+slice does not move when a hand changes size — so the coins are what gives, and they are
+scaled *together* so every coin keeps its true diameter against a quarter. A layout that
+stretched coins to fill a box would wreck the one cue a child has for telling a dime from a
+nickel before they can name either.
+
+That forces three things, and none of them are optional:
+
+- **The border, padding and tab height live in `player-wallet.js`**, not in the stylesheet,
+  because the fit subtracts them from the configured box. They are published back out as
+  custom properties for the CSS to spend. A second copy in CSS would drift.
+- **`COIN_RATIOS` in `player-wallet.js` duplicates the `--pc-coin-ratio` values in
+  `coin.css`** — the fit has to measure a hand before any of it is in a document to measure.
+  Change one and change the other.
+- **Rows are built as elements from the same packing the fit checked**, rather than left to
+  flex wrap. Sub-pixel widths and a promise of a fixed box do not survive guessing.
 
 ## Rules that bite
 
@@ -125,5 +146,8 @@ Open the manual test pages with `npm run dev` (they are not routes; nothing impo
   tray at four widths, and **19 self-checks that must report 0 failures**. Advancing a slot and
   grabbing a tray are wired up, so slot geometry and the detach-versus-destroy seam both get
   exercised by hand.
+- `/src/components/test/playerWallet.html` — four hands along the base of a 1200×800 frame,
+  with width and height on sliders. Drag them: no coin may leave its box, and a quarter must
+  stay bigger than a dime at every size.
 
 Then `npm run build` and check it is clean.
