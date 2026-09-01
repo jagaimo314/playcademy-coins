@@ -1,0 +1,60 @@
+/*
+ * Sizes are in the belt's user units, scaled off `--pc-tray-width`, which the
+ * component publishes on its root. That is the same arrangement `Grid` uses for
+ * `--pc-grid-cell`: one inline number, and the type follows the geometry.
+ */
+
+.pc-tray__goods {
+    fill: var(--pc-tray-goods, var(--pc-blue));
+    stroke: var(--pc-ink);
+    stroke-width: 2.5;
+}
+
+.pc-tray__deck {
+    fill: var(--pc-gold-deep);
+    stroke: var(--pc-ink);
+    stroke-width: 2.5;
+}
+
+.pc-tray__plate {
+    fill: var(--pc-white);
+    stroke: var(--pc-ink);
+    stroke-width: 2.5;
+}
+
+.pc-tray__price {
+    font-family: var(--pc-font-display);
+    font-size: calc(var(--pc-tray-width, 120px) * 0.19);
+    font-weight: 800;
+    fill: var(--pc-ink);
+}
+
+/* Invisible, but painted — `fill: none` would take no pointer events at all. */
+.pc-tray__hit { fill: transparent; }
+
+.pc-tray[role='button'] { cursor: pointer; }
+
+/*
+ * One ring, two meanings, told apart by colour *and* by the fact that a chosen
+ * tray also says so in its accessible name. Drawn only when it applies, so an
+ * unchosen tray costs nothing.
+ */
+.pc-tray__ring {
+    display: none;
+    fill: none;
+    stroke-width: 4;
+    stroke-linejoin: round;
+}
+
+.pc-tray.is-selected .pc-tray__ring {
+    display: block;
+    stroke: var(--pc-green-ink);
+}
+
+.pc-tray:focus-visible .pc-tray__ring {
+    display: block;
+    stroke: var(--pc-blue-ink);
+    stroke-dasharray: 8 6;
+}
+
+.pc-tray.is-selected .pc-tray__plate { fill: var(--pc-green); }

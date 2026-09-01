@@ -17,6 +17,8 @@ components report back through callbacks passed in (`onClick`, `onSubmit`, `onRe
 | --- | --- |
 | [`coin/`](coin/CLAUDE.md) | One coin. The most reused thing in the app — **read its own CLAUDE.md before touching it or anything that draws coins.** |
 | `coin-pile/` | Rows of one denomination, plus the gestures the Lesson teaches with: a boundary round the pile, a boundary round one coin, flipping the pile to its value side and back. |
+| `conveyor-belt/` | The Bakery's belt: a band and an ordered row of slots, each holding at most one tray. Its only job is mapping a slot index into geometry — the server owns the occupancy. |
+| `conveyor-item/` | One tray on a belt: a graphic of baked goods over the price printed at its base. The goods are a placeholder square until there is real bakery art. |
 | `answer-input/` | The typed-answer field. The brief forbids multiple choice, so this is how every answer is given. |
 | `narrator/` | Web Speech API wrapper. Always renders the spoken text as a caption too. |
 | `primary-button/` | The app's main button. A disabled one renders its reason. |
@@ -24,6 +26,13 @@ components report back through callbacks passed in (`onClick`, `onSubmit`, `onRe
 | `Grid.js` | Plain SVG grid: lines, plus cell ↔ row/col maths in any reading `direction`. |
 | `SkipCountGrid.js` | `Grid` + cell labels, interval indicators, the reveal animation, cell highlights, and the student's answer star. |
 | `SkipCountCurrencyGrid.js` | `SkipCountGrid` in cents, with a ghosted real coin as each indicator. |
+
+**Where the conveyor pair sits.** `docs/bakery-backend-plan.md` sketches the belt and the tray
+under `views/bakery/game/`. They are here instead — view-agnostic SVG that reads no state and
+knows nothing about a room. Only the Bakery uses them today, which is one view rather than the
+two the bar above asks for: a deliberate exception, on the reasoning that a belt of priced
+trays is the part of the game most likely to be wanted outside the board. If that never
+happens, move them down into the view rather than leaving the exception to rot.
 
 ## Two shapes, and when to use which
 
@@ -57,7 +66,15 @@ makes the same component work in the Lesson's fixed frame and in the Bakery's fl
 **`destroy()` is mandatory** when a component holds anything beyond its own subtree —
 timers, window listeners, `speechSynthesis`, network subscriptions, **or child components**.
 `coin-pile` destroys its coins; `SkipCountCurrencyGrid` destroys its ghost coins;
-`narrator` cancels page-global speech. Removing the element is not enough.
+`conveyor-belt` destroys the trays still on it; `narrator` cancels page-global speech.
+Removing the element is not enough.
+
+**A belt *detaches* a tray that leaves it; it does not destroy one.** `setSlotItems()` takes a
+whole new occupancy and lifts out anything no longer on the belt, but a claimed tray still has
+a flight to the player's panel to animate, and a wasted one still has to fall into the fire.
+Killing it at the moment it left the array would cut both short. So the seam is: on the belt,
+the belt owns it; off the belt, the caller does — and `destroy()` still takes everything the
+belt is currently holding.
 
 **Build DOM with `el()` / `svg()` from `lib/dom.js`. No `innerHTML` anywhere** — room codes
 and player names arrive off the wire.
@@ -104,5 +121,9 @@ Open the manual test pages with `npm run dev` (they are not routes; nothing impo
 - `/src/components/test/skipCountGrid.html` — all three grids, plus 22 self-checks that
   must report 0 failures. Any change to grid geometry or cell numbering goes through here.
 - `/src/components/test/coins.html` — every denomination on every face, plus a live flip.
+- `/src/components/test/conveyorBelt.html` — a 1200-unit belt of 10 slots carrying trays, the
+  tray at four widths, and **19 self-checks that must report 0 failures**. Advancing a slot and
+  grabbing a tray are wired up, so slot geometry and the detach-versus-destroy seam both get
+  exercised by hand.
 
 Then `npm run build` and check it is clean.

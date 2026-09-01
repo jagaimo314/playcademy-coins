@@ -1,0 +1,28 @@
+.pc-belt {
+    display: block;
+    max-width: 100%;
+    height: auto;
+    font-family: var(--pc-font-display);
+}
+
+.pc-belt__band {
+    fill: var(--pc-ink-soft);
+    stroke: var(--pc-ink);
+    stroke-width: 2.5;
+}
+
+/* Slot boundaries, cut into the band. Light enough to sit under the trays. */
+.pc-belt__divider {
+    stroke: var(--pc-sky);
+    stroke-width: 2.5;
+    stroke-linecap: round;
+    opacity: 0.45;
+}
+
+.pc-belt__pulley {
+    fill: var(--pc-sky-deep);
+    stroke: var(--pc-ink);
+    stroke-width: 2.5;
+}
+
+.pc-belt__hub { fill: var(--pc-ink); }

@@ -1,0 +1,86 @@
+/* Styles for the conveyor belt test page only — nothing here ships. */
+
+#test {
+    max-width: 80rem;
+    margin: 0 auto;
+    padding: var(--pc-space-6) var(--pc-space-4) var(--pc-space-7);
+    display: flex;
+    flex-direction: column;
+    gap: var(--pc-space-5);
+}
+
+.pc-test-header p { color: var(--pc-ink-soft); }
+
+.pc-test-caption {
+    font-size: var(--pc-text-sm);
+    color: var(--pc-ink-soft);
+    margin: var(--pc-space-3) 0 0;
+}
+
+.pc-test-caption code {
+    background: var(--pc-sky-deep);
+    border-radius: 4px;
+    padding: 0 4px;
+}
+
+.pc-test-readout {
+    margin: 0 0 var(--pc-space-3);
+    font-family: var(--pc-font-display);
+    font-size: var(--pc-text-lg);
+    font-weight: 800;
+}
+
+.pc-test-trays {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-end;
+    gap: var(--pc-space-5);
+}
+
+.pc-test-trays figure { margin: 0; }
+
+.pc-test-trays figcaption {
+    font-size: var(--pc-text-sm);
+    color: var(--pc-ink-soft);
+    margin-top: var(--pc-space-2);
+}
+
+.pc-test-controls {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--pc-space-2);
+    margin-top: var(--pc-space-4);
+}
+
+.pc-test-btn {
+    font-family: var(--pc-font-body);
+    font-size: var(--pc-text-sm);
+    font-weight: 700;
+    color: var(--pc-ink);
+    background: var(--pc-gold);
+    border: var(--pc-border);
+    border-radius: var(--pc-radius-sm);
+    box-shadow: var(--pc-shadow-sm);
+    padding: var(--pc-space-2) var(--pc-space-4);
+    min-height: var(--pc-tap-min);
+    cursor: pointer;
+}
+
+.pc-test-btn--quiet { background: var(--pc-white); }
+
+.pc-test-btn:active {
+    transform: translate(2px, 2px);
+    box-shadow: none;
+}
+
+.checks {
+    list-style: none;
+    margin: var(--pc-space-3) 0 0;
+    padding: 0;
+    font-size: var(--pc-text-sm);
+}
+
+.checks li { display: flex; gap: var(--pc-space-2); line-height: 1.5; }
+.checks .is-pass { color: var(--pc-green-ink); font-weight: 800; }
+.checks .is-fail { color: var(--pc-red-deep); font-weight: 800; }
+.checks__detail { color: var(--pc-red-deep); }
