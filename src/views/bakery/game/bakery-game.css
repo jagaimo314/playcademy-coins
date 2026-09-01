@@ -1,0 +1,183 @@
+/*
+ * The bakery floor.
+ *
+ * Same frame trick as the Lesson: a fixed stage over the whole viewport holding
+ * a 1200x800 box that centres with `margin: auto`. `justify-content: center`
+ * would look identical until the display is smaller than the frame, at which
+ * point it pushes the left edge somewhere no scrollbar can reach.
+ */
+.pc-game {
+    position: fixed;
+    inset: 0;
+    z-index: 1;
+
+    display: flex;
+    overflow: auto;
+    background: var(--pc-sky);
+}
+
+.pc-game__frame {
+    position: relative;
+    flex: 0 0 auto;
+    margin: auto;
+
+    width: var(--pc-game-width);
+    height: var(--pc-game-height);
+
+    background: var(--pc-white);
+    /*
+     * An outline rather than a border, so it takes up no layout: every offset
+     * inside is then measured from the 1200x800 box itself rather than from
+     * 1200x800 minus two edges.
+     */
+    outline: var(--pc-border);
+    border-radius: var(--pc-radius);
+    overflow: hidden;
+}
+
+/* ------------------------------------------------------------- the counters */
+
+.pc-game__scores {
+    position: absolute;
+    inset: 0 0 auto 0;
+    height: 60px;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--pc-space-6);
+
+    background: var(--pc-sky-deep);
+    border-bottom: var(--pc-border);
+}
+
+.pc-game__score {
+    margin: 0;
+    font-family: var(--pc-font-display);
+    font-size: var(--pc-text-lg);
+    font-weight: 700;
+    display: flex;
+    align-items: baseline;
+    gap: 0.3em;
+}
+
+.pc-game__score span {
+    font-size: var(--pc-text-sm);
+    color: var(--pc-ink-soft);
+}
+
+.pc-game__count {
+    font-size: 1.6em;
+    line-height: 1;
+}
+
+/*
+ * The two counters read in opposite directions, so they are told apart by their
+ * label and their position as well as by colour — the number is never the only
+ * thing carrying the meaning.
+ */
+.pc-game__score--served .pc-game__count { color: var(--pc-green-ink); }
+.pc-game__score--wasted .pc-game__count { color: var(--pc-red-deep); }
+
+/* ----------------------------------------------------------------- the belts */
+
+.pc-game__belts,
+.pc-game__flights {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+}
+
+/* Trays are the interactive part; the layer around them must not swallow taps. */
+.pc-game__belts .pc-tray { pointer-events: auto; }
+
+.pc-game__belt {
+    position: absolute;
+    left: var(--pc-belt-x);
+    top: var(--pc-belt-y);
+}
+
+/*
+ * A jammed belt is drawn *and* said: the oven end dims, and `conveyor-belt`
+ * already writes its occupancy into the group's accessible name.
+ */
+.pc-game__belt.is-jammed {
+    filter: saturate(0.6);
+}
+
+/* --------------------------------------------------------------- the flights */
+
+.pc-game__flight {
+    position: absolute;
+    /* `left`/`top` are set per tray, in frame coordinates. */
+    width: 0;
+    height: 0;
+    overflow: visible;
+}
+
+/*
+ * A tray in flight is an SVG group that has been lifted out of its belt, so it
+ * needs its own canvas to draw in. Overflow visible above lets it paint outside
+ * the zero box it is anchored to.
+ */
+.pc-game__flight > * {
+    position: absolute;
+    overflow: visible;
+}
+
+/* ------------------------------------------------------------------ the base */
+
+.pc-game__base {
+    position: absolute;
+    inset: auto 0 0 0;
+
+    display: flex;
+    align-items: flex-end;
+    justify-content: center;
+    gap: 12px;
+    padding: 0 20px 20px;
+}
+
+/* Your own panel is lifted and outlined; the name on the tab says so too. */
+.pc-game__base .is-you {
+    transform: translateY(-6px);
+    box-shadow: var(--pc-shadow);
+}
+
+.pc-game__base .is-gone {
+    opacity: 0.45;
+    filter: grayscale(0.8);
+}
+
+/* ---------------------------------------------------------------- the ending */
+
+.pc-game__overlay {
+    position: absolute;
+    inset: 0;
+
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: var(--pc-space-3);
+
+    text-align: center;
+    background: color-mix(in srgb, var(--pc-sky) 92%, transparent);
+}
+
+.pc-game__overlay[hidden] { display: none; }
+
+.pc-game__overlay h2 {
+    margin: 0;
+    font-family: var(--pc-font-display);
+    font-size: var(--pc-text-display);
+    color: var(--pc-red-deep);
+}
+
+.pc-game__overlay.is-win h2 { color: var(--pc-green-ink); }
+
+.pc-game__overlay p {
+    margin: 0;
+    font-size: var(--pc-text-lg);
+    font-weight: 700;
+}

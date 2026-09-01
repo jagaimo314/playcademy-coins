@@ -1,7 +1,7 @@
 # Bakery backend plan
 
-**Status: proposed.** This is the concrete plan for `server/`, derived from the frontend
-described below. It extends — and in a few places pins down — the provisional contract in
+**Status: M0–M2 built, M3–M5 planned.** This is the concrete plan for `server/`, derived from
+the frontend described below. It extends — and in a few places pins down — the provisional contract in
 [multiplayer-contract.md](multiplayer-contract.md). Where the two disagree, this doc wins and
 that one gets amended.
 
@@ -49,14 +49,22 @@ Pinned numbers so the implementation is unambiguous. All live in `server/src/gam
 | Belts | `clamp(ceil(n / 2), 1, 3)`, capped further by difficulty |
 | Serve target | `5 × n` |
 | Waste limit | `5 × n` |
-| Slots per belt | 8, indexed 0 at the oven to 7 at the mouth; pitch `0.134 u` (≈160px) |
+| Slots per belt | 8, indexed 0 at the oven to 7 at the mouth; pitch `0.1 u` (120px) |
 | Belt advance interval | easy 3000ms, medium 2000ms, hard 1300ms per slot (≈21s / 14s / 9s end to end) |
 | Incinerator mouth | slot 7 |
 | Hop duration | 260ms of each interval, client-side only; the tray rests for the remainder |
 | Wrong-grab cooldown | 1500ms, that player only |
 | Claimable slots | any of 0–7, item state `traveling` |
+| Panel colours | red, blue, green, yellow — handed out in that order |
 
 One tray per slot, so the old minimum-gap rule is now structural rather than enforced.
+
+**Why the pitch is 120px and not the 160 an earlier draft carried.** Eight slots at 160 span
+1280px, which overruns the 1200 frame and swallows the incinerator whole. The slot *count* is
+load-bearing — the end-to-end times above are seven advances × the interval — so the pitch is
+what gives. At 120 a belt spans 960px and sits at `x 60–1020`, leaving 60px of margin at the
+oven end and a 60px run-up to the incinerator at 1080. The edges breathe, and a tray at the
+mouth reads as *approaching* the fire rather than already in it.
 
 **Hand values.** Easy: 5–25¢, all one denomination — exactly the KC the lesson teaches.
 Medium: mixed, ≤ 50¢. Hard: mixed, ≤ 99¢. Hands are dealt **distinct-valued** across active
@@ -308,31 +316,61 @@ than replaying history.
 - **The fake adapter stays.** `fake-room-adapter.js` is not thrown away when the real one lands;
   it keeps the Bakery view buildable offline and testable in CI.
 
+`CLAUDE.md` says there is no test runner in this repo. That is true of the *frontend*, and it
+stays true: `node:test` belongs to `server/`, is declared in `server/package.json`, runs with
+`npm test` from inside `server/`, and reaches nothing above it. The frontend's verification is
+unchanged — a clean `npm run build` and the manual pages reporting zero failures.
+
 ## Milestones
 
-| # | Deliverable |
-| --- | --- |
-| M0 | `server/` skeleton: ws bootstrap, room registry, codes, lobby at parity with the fake adapter. `ws-room-adapter.js` behind the existing `net/index.js` swap. |
-| M1 | One belt end to end: spawn into slot 0, the advance beat, `belt/advanced`, client hop animation. No claiming yet. |
-| M2 | Dealer + hands + guaranteed match; claim resolution; served/wasted; win and loss. The game is playable here. |
-| M3 | Incinerator doors, jams, difficulty table, 2–3 belts, player-count scaling. |
-| M4 | Resilience: reconnect, host migration, pause, rate limits, clock sync. |
-| M5 | Bot client, deterministic replay log, protocol diagram for `MULTIPLAYER.pdf`. |
+Split by side, because the client half is much smaller than it once was. The belt, the tray and
+the wallet already exist, so M1's client work is the hop and the mirror rather than three
+components from scratch — and the incinerator, the one component still missing, correctly lands
+at M3 with the doors it exists to show.
+
+| # | Server | Client | Done when |
+| --- | --- | --- | --- |
+| **M0** | ws bootstrap, room registry, codes, host/join, `player/ready`, `colorSlot` assignment, `resumeToken` issued | `net/ws-room-adapter.js` behind the existing `net/index.js` swap; the lobby sends ready and start | Two browsers reach the same lobby over a real socket, and the fake adapter still drives the same view. |
+| **M1** | `config.js`, `state.js`, seeded `rng.js`, pure `step()`, `belts.js` motion with staggered beats, one belt, spawn into slot 0 | The hop; the id→tray mirror; the belt mounted in the frame at the settled pitch | A tray hops down one belt in two browsers in lockstep. No claiming. |
+| **M2** | `dealer.js` — hands, prices, decoys drawn from the lesson's taxonomy, `pendingMatchItemId`; `claims.js`; served/wasted; win and loss | Wallets wired to `hand/dealt`; claim on tap with the optimistic reach and rollback; score and end states | **The game is playable.** The hand's value has still never left the server. |
+| **M3** | Doors, jams, `wasteOnExit`, the difficulty table, 2–3 belts, player-count scaling | The incinerator component; the jam affordance at the oven | The three difficulties play differently. |
+| **M4** | Disconnect grace, host migration, `paused`, rate limits, `time/sync` | Reconnect from `sessionStorage`; the backgrounded-tab snap — newest occupancy per belt, no catch-up hops | Pull the wifi mid-game and come back to the same hand. |
+| **M5** | `bot.js`, deterministic replay from `(seed, intents[])` | — | The game demos solo, and the protocol diagram is drawn for `MULTIPLAYER.pdf`. |
 
 M0–M2 is the part that has to work. M3 onward is difficulty and durability.
 
+**What M2 runs with, pending M3.** One belt, doors pinned open, `wasteOnExit: 'matched'`. The
+occupancy rule in `belts.js` is written in full — `canAdvance(MOUTH_SLOT) = doorsOpen` — so
+closing the doors at M3 produces jams with no change to the motion code. Until then the mouth
+always empties and a belt cannot back up, which is why the jam affordance is M3's client work
+and not M1's.
+
 ## Frontend seams this assumes
 
-All client-side, and all needed before M1 pays off:
+An earlier draft put these view-local under `views/bakery/game/`. **They live in
+`src/components/` instead**, built as independent components against their own test pages
+before any server existed — `components/CLAUDE.md` carries the reasoning for the exception to
+the two-views bar. Three of the four are already done:
 
-- `src/components/` — belt, tray, hand panel, incinerator components. 
-  Built out as independent components to be used in the game.
-- A **hop animation per tray**, started on each `belt/advanced`. Await it with
+| Seam | State |
+| --- | --- |
+| `components/conveyor-belt/` | **Built.** Slots, `setSlotItems()` taking a whole occupancy, `slotCenter()`, and the detach-not-destroy seam a claimed tray needs. Written to this plan's model already: nothing interpolates a position, because the belt is *told* the occupancy. |
+| `components/conveyor-item/` | **Built.** Price plate, pointer and keyboard activation, `update({ price, selected })` that re-prices without replacing the node. |
+| `components/player-wallet/` | **Built.** `colorSlot` colours, coin ids in, and the hand's value never shown, summed, or put in the accessible name. |
+| incinerator | **M3.** The only component this build still needs, and M3 is where doors and exit waste first mean anything. It talks to a belt in belt coordinates through `slotCenter()`. |
+
+What is left is composition, and it lives in `views/bakery/game/`:
+
+- **The hop**, played on each `belt/advanced`. `conveyor-belt` owns slot geometry, so it owns
+  the animation too — `setSlotItems(next, { animate: true })`. Await it with
   `animationSettled()` from `lib/dom.js`, never `animation.finished` — a backgrounded tab never
   settles the latter and the belt would deadlock. There is no interpolation buffer and no
   prediction; the client is told the occupancy and animates to it.
-- A **local mirror** of game state in the view — not the store, since it is ephemeral and
-  server-owned — updated by events.
+- **The id→tray mirror.** `belt/advanced` carries `itemId`s; `setSlotItems()` takes tray
+  *instances*. Something has to hold the map between them, and that something is also what owns
+  a claimed tray for the rest of its flight once the belt has detached it. It is a local mirror,
+  deliberately not the store: this state is ephemeral and server-owned, and nothing outside the
+  Bakery may read it.
 - **Claim on click/tap of a tray**, with the optimistic reach animation and rollback above.
 - `net/ws-room-adapter.js`, implementing the existing adapter interface plus `time/sync`.
 

@@ -5,6 +5,15 @@
     align-items: stretch;
 }
 
+/*
+ * Any `display` at all beats the user agent's `[hidden] { display: none }`, so
+ * without this a caller setting `hidden` on the group gets no effect and no
+ * error — the Bakery lobby showed a non-host the Start button for exactly this
+ * reason. Every component that gives its root a `display` owes its callers this
+ * line.
+ */
+.pc-button-group[hidden] { display: none; }
+
 .pc-button {
     font-family: var(--pc-font-display);
     font-size: var(--pc-text-lg);

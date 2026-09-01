@@ -23,9 +23,16 @@ npm run build
 
 `npm run preview` serves the built bundle. Dev runs on `:5173`.
 
-There is **no test runner and no linter** in this repo. Verification is: a clean
+There is **no test runner and no linter** for the frontend. Verification is: a clean
 `npm run build`, the grid test page reporting zero failures, and the app driven in a
-browser. Two manual pages exist for that (not routes — nothing imports them, open them
+browser.
+
+`server/` is the exception, and it is a real one: it has its own `package.json`, its own
+`node:test` suite, and reaches nothing above itself.
+
+```bash
+npm --prefix server test
+``` Two manual pages exist for that (not routes — nothing imports them, open them
 directly in dev):
 
 | Page | Covers |
@@ -48,7 +55,7 @@ src/
 ├─ lib/               pure functions, no DOM
 └─ styles/            tokens.css, base.css
 docs/                 the design record
-server/               future multiplayer backend; not part of this build
+server/               the multiplayer backend  -> server/README.md
 ```
 
 **Imports flow one way.** `views → components → lib`, with `state` reachable from views.
@@ -92,7 +99,11 @@ These are requirements, not preferences:
   Detection only; remediation is out of scope. `views/lesson/diagnostics.js` does the
   classifying and is written but **not yet wired into the view**.
 - **The Bakery unlocks when the Lesson is complete**, and the gate is real: the route guard
-  refuses to host a room with the flag unset.
+  refuses to host a room with the flag unset. Joining someone else's room by code is
+  deliberately ungated - an invited kid can always accept.
+- **The server is authoritative.** The Bakery client renders what it is told and forwards what
+  its player did. It never computes a score, a position or an outcome; a hand's *value* is
+  never sent to any client, not even its owner's, because that sum is the exercise.
 
 Audience: a K–2 kid who can read English and type, and knows nothing else. Large hit
 targets, no dense text, no timed pressure in the lesson, and errors that never read as

@@ -252,9 +252,11 @@ function runChecks() {
     belt.setSlotItems([null, null, tray])
 
     check('a tray is centred over its slot, standing on the belt', () => {
+        // Read off `style`, not the presentation attribute: the hop animates the
+        // CSS property, so that is where a tray's position now lives.
         const { x, y } = belt.slotCenter(2)
-        return expect(tray.el.getAttribute('transform'),
-            `translate(${x - tray.width / 2} ${y - tray.height})`, 'transform')
+        return expect(tray.el.style.transform,
+            `translate(${x - tray.width / 2}px, ${y - tray.height}px)`, 'transform')
     })
 
     check('itemAt finds the tray, and nothing in an empty slot', () => {

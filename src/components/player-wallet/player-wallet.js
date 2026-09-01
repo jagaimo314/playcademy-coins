@@ -8,10 +8,14 @@ import './player-wallet.css'
  * `colorSlot` of exactly these, assigned so two kids in a room never share one —
  * see docs/bakery-backend-plan.md.
  *
+ * **The order is load-bearing, not cosmetic.** The server assigns by index, so
+ * this list and `PLAYER_COLORS` in `server/src/game/config.js` have to agree or
+ * the first player to join is red on one side and blue on the other.
+ *
  * "yellow" is drawn in the palette's gold. There is no separate yellow token,
  * and gold is the warm slot the brief's own page uses.
  */
-export const PLAYER_COLORS = Object.freeze(['red', 'green', 'blue', 'yellow'])
+export const PLAYER_COLORS = Object.freeze(['red', 'blue', 'green', 'yellow'])
 
 /**
  * Chrome, in pixels. JS owns these rather than the stylesheet because the coin

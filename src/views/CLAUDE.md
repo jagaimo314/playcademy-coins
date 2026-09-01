@@ -117,12 +117,29 @@ that watches the store.
 
 ## `bakery/`
 
-Scaffold. The lobby works end to end against an in-memory fake adapter — hosting, joining,
-the player list — with no server. No game yet.
+Playable. The lobby and the game both run against the real backend in `server/` over a
+WebSocket. `docs/bakery-backend-plan.md` is the design record for both halves.
 
-**The transport is chosen in exactly one place: `net/index.js`.** Swapping to a real
-backend is one import change there; nothing in `bakery.view.js` moves. See
-`docs/multiplayer-contract.md`.
+**The transport is chosen in exactly one place: `net/index.js`.** It returns the real
+`ws-room-adapter` by default and the in-memory fake under `VITE_USE_FAKE_ROOM=1`; nothing in
+`bakery.view.js` knows which it got. The fake was not deleted when the real one landed — it is
+what keeps the view buildable and demoable with no server running.
+
+**The server is authoritative, and this view is a renderer.** It forwards what its player did
+and draws what it is told back. It computes no score, no position and no outcome, and a hand's
+*value* never crosses the wire — `hand/dealt` carries coin ids and the sum stays on the
+server, because that sum is the exercise.
+
+`game/` holds the floor: the frame's three bands, and the **id-to-tray mirror**.
+`belt/advanced` carries `itemId`s while `conveyor-belt.setSlotItems()` takes tray *instances*,
+so something has to hold the correspondence — and that same something owns a tray's flight
+once the belt has let go of it. It is a local mirror and deliberately **not** the store: this
+state is ephemeral and server-owned, and the store is for what outlives a view.
+
+**A tray is detached by the belt, then destroyed by us.** `conveyor-belt` lifts out a tray
+that has left its occupancy but does not dispose of it, because a claimed one still has a
+flight to its buyer's panel and a wasted one still has to fall. On the belt, the belt owns it;
+off the belt, this view does — and every one of those flights ends in `destroy()`.
 
 ## `destroy()` checklist
 

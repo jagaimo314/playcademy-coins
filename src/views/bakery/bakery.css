@@ -50,3 +50,24 @@
     font-weight: 700;
     color: var(--pc-ink-soft);
 }
+
+.pc-bakery__actions {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-start;
+    gap: var(--pc-space-4);
+}
+
+/*
+ * The colour a player will be on the bakery floor, previewed on their row in
+ * the lobby — so the border and the word next to it are learned together,
+ * before either has to carry the meaning alone.
+ */
+.pc-bakery__player--red { border-left: 10px solid var(--pc-red); }
+.pc-bakery__player--blue { border-left: 10px solid var(--pc-blue); }
+.pc-bakery__player--green { border-left: 10px solid var(--pc-green); }
+.pc-bakery__player--yellow { border-left: 10px solid var(--pc-gold); }
+
+.pc-bakery__tag--ready {
+    background: var(--pc-green-ink);
+}

@@ -1,0 +1,16 @@
+{
+  "name": "playcademy-bakery-server",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Authoritative multiplayer backend for the Coin Sums bakery.",
+  "scripts": {
+    "start": "node src/index.js",
+    "dev": "node --watch src/index.js",
+    "test": "node --test \"test/*.test.js\"",
+    "start:solo": "node src/index.js --solo"
+  },
+  "dependencies": {
+    "ws": "^8.18.3"
+  }
+}

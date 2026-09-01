@@ -17,7 +17,7 @@ components report back through callbacks passed in (`onClick`, `onSubmit`, `onRe
 | --- | --- |
 | [`coin/`](coin/CLAUDE.md) | One coin. The most reused thing in the app — **read its own CLAUDE.md before touching it or anything that draws coins.** |
 | `coin-pile/` | Rows of one denomination, plus the gestures the Lesson teaches with: a boundary round the pile, a boundary round one coin, flipping the pile to its value side and back. |
-| `conveyor-belt/` | The Bakery's belt: a band and an ordered row of slots, each holding at most one tray. Its only job is mapping a slot index into geometry — the server owns the occupancy. |
+| `conveyor-belt/` | The Bakery's belt: a band and an ordered row of slots, each holding at most one tray. It maps a slot index into geometry and plays the hop between two of them — the server owns the occupancy. |
 | `conveyor-item/` | One tray on a belt: a graphic of baked goods over the price printed at its base. The goods are a placeholder square until there is real bakery art. |
 | `player-wallet/` | One Bakery player's hand: a colour-coded box with their name on a tab. Fixed width and height, coins scaled together to fit — see below. |
 | `answer-input/` | The typed-answer field. The brief forbids multiple choice, so this is how every answer is given. |
@@ -28,12 +28,33 @@ components report back through callbacks passed in (`onClick`, `onSubmit`, `onRe
 | `SkipCountGrid.js` | `Grid` + cell labels, interval indicators, the reveal animation, cell highlights, and the student's answer star. |
 | `SkipCountCurrencyGrid.js` | `SkipCountGrid` in cents, with a ghosted real coin as each indicator. |
 
-**Where the conveyor pair sits.** `docs/bakery-backend-plan.md` sketches the belt and the tray
-under `views/bakery/game/`. They are here instead — view-agnostic SVG that reads no state and
-knows nothing about a room. Only the Bakery uses them today, which is one view rather than the
-two the bar above asks for: a deliberate exception, on the reasoning that a belt of priced
-trays is the part of the game most likely to be wanted outside the board. If that never
-happens, move them down into the view rather than leaving the exception to rot.
+**Where the conveyor pair sits.** An early draft of `docs/bakery-backend-plan.md` sketched the
+belt and the tray under `views/bakery/game/`. They are here instead — view-agnostic SVG that
+reads no state and knows nothing about a room — and the plan now says so. Only the Bakery uses
+them today, which is one view rather than the two the bar above asks for: a deliberate
+exception, on the reasoning that a belt of priced trays is the part of the game most likely to
+be wanted outside the board. If that never happens, move them down into the view rather than
+leaving the exception to rot.
+
+`views/bakery/game/` is not empty, though — it holds the *composition*: the id-to-tray mirror,
+the frame's three bands, and the flight a claimed tray takes to its buyer's panel. That is
+where anything the Bakery alone can mean belongs.
+
+**The belt hops; it does not interpolate.** `setSlotItems(next, { animate: true })` plays every
+tray from the slot it was in to the slot it is now in, and returns a promise that settles when
+they land. There is no interpolation buffer and no prediction anywhere in the pair: the final
+transform is written *before* the animation starts, so a hop that is cancelled, never runs, or
+runs in a backgrounded tab still leaves the belt showing the occupancy the server sent. The
+animation is decoration over a truth that is already correct.
+
+Two things fall out of that, both learned the hard way:
+
+- **A tray's position lives in `style.transform`, not the `transform` attribute.** The hop
+  animates the CSS property, which outranks the presentation attribute — keeping both would
+  mean the tray snapped back to the attribute's value the moment a hop finished.
+- **A newly baked tray fades in where it stands.** Sliding it in from beyond slot 0 reads
+  better in the abstract and is hard-clipped in practice: the belt is an `<svg>` with a
+  viewBox, and anything starting outside it grows out of the left edge as a bar.
 
 ## Two shapes, and when to use which
 
@@ -83,6 +104,12 @@ That forces three things, and none of them are optional:
 
 **Never mount yourself.** Hand back `el`; the caller decides where it goes. This is what
 makes the same component work in the Lesson's fixed frame and in the Bakery's flow layout.
+
+**Give a root with a `display` its own `[hidden]` rule.** Any `display` at all beats the user
+agent's `[hidden] { display: none }`, so a caller setting `hidden` on the root gets no effect
+and no error — the Bakery lobby showed non-hosts the Start button for exactly this reason.
+`primary-button` carries `.pc-button-group[hidden] { display: none; }`; anything else that
+gives its root a `display` owes its callers the same line.
 
 **`destroy()` is mandatory** when a component holds anything beyond its own subtree —
 timers, window listeners, `speechSynthesis`, network subscriptions, **or child components**.

@@ -28,7 +28,7 @@ Scaffolded and running. `npm install && npm run dev`.
 | Shared components — coin, button, answer-input, narrator, progress-bar | Done. |
 | Home view | Done, including the unlock gate and code validation. |
 | Lesson view | Shell. Components wired; teaching flow, content, and scoring not built. |
-| Bakery view | Lobby works against an in-memory fake adapter. No game, no backend. |
+| Bakery view | Playable. Lobby and game run against the real `server/` over a WebSocket; the fake adapter is kept for offline work. |
 | Knowledge graph (Part 1) | Not started. |
 
 The Lesson view carries a temporary **"Dev: mark lesson complete"** button so the Bakery

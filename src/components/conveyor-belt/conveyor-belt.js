@@ -1,9 +1,23 @@
-import { svg } from '../../lib/dom.js'
+import { animationSettled, prefersReducedMotion, svg } from '../../lib/dom.js'
 import { TRAY_ASPECT } from '../conveyor-item/conveyor-item.js'
 import './conveyor-belt.css'
 
 /** Stroke room, so the band's outline is not clipped by the viewBox edge. */
 const PAD = 3
+
+/**
+ * How long a tray takes to hop one slot.
+ *
+ * Short on purpose. The server advances the belt instantaneously and the tray
+ * then *rests* for the remainder of the interval — 1 to 2.7 seconds depending on
+ * difficulty — and that resting period is the whole point of a stepped belt: a
+ * second grader aiming at a stationary tray is aiming at a target rather than
+ * leading a moving one. A leisurely hop would spend that stillness.
+ *
+ * The server quotes its own `hopMs` in `room/state`; this is the default when
+ * nobody says otherwise.
+ */
+export const HOP_MS = 260
 
 /** Depth of the band, as a fraction of `slotWidth`. */
 const BAND = 0.3
@@ -123,10 +137,23 @@ export function createConveyorBelt({
         return { x: index * slotWidth + slotWidth / 2, y: deckY }
     }
 
+    /**
+     * Where a tray of any width sits when centred over `index`, standing on the
+     * band. A string rather than a pair because both the attribute and the hop's
+     * keyframes want it in exactly this form.
+     */
+    function transformFor(item, index) {
+        const { x, y } = slotCenter(index)
+        return `translate(${x - item.width / 2}px, ${y - item.height}px)`
+    }
+
     /** Centre a tray of any width over its slot, standing on the band. */
     function place(item, index) {
-        const { x, y } = slotCenter(index)
-        item.el.setAttribute('transform', `translate(${x - item.width / 2} ${y - item.height})`)
+        // Written as a CSS transform rather than the SVG presentation attribute
+        // because the hop animates the CSS property, and a presentation
+        // attribute would be overridden mid-flight and then snap back when the
+        // animation cleared. One representation, no fighting.
+        item.el.style.transform = transformFor(item, index)
         if (item.el.parentNode !== itemLayer) itemLayer.appendChild(item.el)
     }
 
@@ -139,10 +166,16 @@ export function createConveyorBelt({
      * has an animation to fly through, and the caller owns that. Only
      * `destroy()` disposes of trays.
      */
-    function setSlotItems(next = []) {
+    function setSlotItems(next = [], { animate = false, duration = HOP_MS } = {}) {
         if (next.length > slotCount) {
             throw new RangeError(`${next.length} items for ${slotCount} slots`)
         }
+
+        // Where everything was, captured before the array is replaced. A tray
+        // that was not on the belt is absent, which is how a fresh bake is told
+        // apart from a tray that merely moved.
+        const before = new Map()
+        slots.forEach((item, index) => item && before.set(item, index))
 
         const incoming = new Set(next.filter(Boolean))
         for (const item of slots) {
@@ -153,6 +186,54 @@ export function createConveyorBelt({
         slots.forEach((item, index) => item && place(item, index))
 
         root.setAttribute('aria-label', describe())
+
+        const hopping = animate && !prefersReducedMotion()
+        return hopping ? hop(before, duration) : Promise.resolve()
+    }
+
+    /**
+     * Play every tray from where it was to where it now is.
+     *
+     * The final transform is already set by `place()` above, so this only ever
+     * animates *back* to a truthful position. If the hop is cancelled, the tab
+     * is backgrounded, or the animation never runs at all, the belt is still
+     * showing the occupancy the server sent — which is the property that makes
+     * this decoration rather than state.
+     */
+    function hop(before, duration) {
+        const flights = []
+
+        for (const [index, item] of slots.entries()) {
+            if (!item) continue
+
+            // Not on the belt a moment ago, so it has just come off the oven.
+            // It fades in where it stands rather than sliding in from beyond
+            // slot 0: the belt is an `<svg>` with a viewBox, so anything
+            // starting outside that box is hard-clipped by it, and the slide
+            // read as a bar growing out of the left edge.
+            if (!before.has(item)) {
+                flights.push(item.el.animate(
+                    [{ opacity: 0 }, { opacity: 1 }],
+                    { duration, easing: 'ease-out' },
+                ))
+                continue
+            }
+
+            const from = transformFor(item, before.get(item))
+            const to = transformFor(item, index)
+            if (from === to) continue
+
+            flights.push(item.el.animate(
+                [{ transform: from }, { transform: to }],
+                { duration, easing: 'ease-in-out' },
+            ))
+        }
+
+        // `animationSettled`, never `animation.finished`. An animation only
+        // advances while the page is painting, so `finished` simply never
+        // settles in a backgrounded tab — and a belt awaiting one raw would
+        // deadlock the moment a child switched apps.
+        return Promise.all(flights.map(flight => animationSettled(flight, duration + 200)))
     }
 
     setSlotItems(slotItems)
