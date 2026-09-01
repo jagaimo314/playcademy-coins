@@ -95,7 +95,7 @@ Non-negotiable, and cheap if done as you go:
 - Honour `prefers-reduced-motion`. CSS rules in `base.css` cover CSS animation; anything
   driven from script must check `prefersReducedMotion()` itself.
 - Label every control, keep focus visible, and keep hit targets at `--pc-tap-min` — these
-  are K–2 hands, often on a tablet.
+  are second-grader hands, often on a tablet.
 
 ## Before you finish
 

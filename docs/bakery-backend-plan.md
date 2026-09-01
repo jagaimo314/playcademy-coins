@@ -5,6 +5,10 @@ described below. It extends — and in a few places pins down — the provisiona
 [multiplayer-contract.md](multiplayer-contract.md). Where the two disagree, this doc wins and
 that one gets amended.
 
+**Amended:** belts advance in discrete slots rather than gliding continuously. The earlier
+frame-streaming motion model is superseded throughout — see
+[Motion](#motion-discrete-slots-advanced-on-a-beat).
+
 ## The frontend it has to serve
 
 A fixed 1200×800 frame, three horizontal bands:
@@ -12,7 +16,7 @@ A fixed 1200×800 frame, three horizontal bands:
 | Band | Contents |
 | --- | --- |
 | Base (`y 640–800`) | Up to 4 colour-coded player panels — red, blue, green, yellow. Each holds that player's **hand**: a set of coins the kid must sum. |
-| Bakery (`y 60–620`) | 1–3 **conveyor belts**, moving left → right, carrying trays of baked goods. Each tray has a **price** printed at its base. |
+| Bakery (`y 60–620`) | 1–3 **conveyor belts**, advancing left → right one slot at a time, carrying trays of baked goods. Each tray has a **price** printed at its base. |
 | Right edge (`x 1080–1200`) | The **incinerator**. Doors open → food that reaches it is destroyed. Doors closed → food stops and backs up the belt. |
 
 The loop: each player grabs the tray whose price equals the value of their own hand. Correct →
@@ -21,8 +25,8 @@ mode: `n` players together must serve `5n` items before wasting `5n`.
 
 ### What that forces server-side
 
-1. **Belt motion** — one clock for everyone. If each client ran its own belt, two kids would
-   see the same tray in different places and "who grabbed it first" would be unanswerable.
+1. **Belt motion** — one beat for everyone. If each client ran its own belt, two kids would
+   see the same tray in different slots and "who grabbed it first" would be unanswerable.
 2. **Claiming** — the only contested resource in the game. Must be resolved in one place.
 3. **Hand and price generation** — the game has to stay *solvable* (every hand needs a matching
    price to actually arrive) and *fair* (nobody's match can be starved). That is a scheduling
@@ -31,8 +35,9 @@ mode: `n` players together must serve `5n` items before wasting `5n`.
    must never be able to increment them.
 
 Everything else — layout, art, animation, easing, sound — stays on the client. The server never
-learns a pixel: it works in **normalized lane space**, `u ∈ [0,1]` along a belt, and the client
-maps `u` to its own geometry.
+learns a pixel: a belt is an ordered array of **slots**, and the server reasons only about which
+slot holds which tray. The client maps a slot index into its own geometry. The `u` figures below
+are that mapping, quoted for the client's benefit; nothing server-side computes with them.
 
 ## Rules the server owns
 
@@ -44,11 +49,14 @@ Pinned numbers so the implementation is unambiguous. All live in `server/src/gam
 | Belts | `clamp(ceil(n / 2), 1, 3)`, capped further by difficulty |
 | Serve target | `5 × n` |
 | Waste limit | `5 × n` |
-| Tray travel time | easy 22s, medium 15s, hard 10s across the lane |
-| Minimum tray gap | `0.14 u` (≈140px) |
-| Incinerator mouth | `u = 0.94` |
+| Slots per belt | 8, indexed 0 at the oven to 7 at the mouth; pitch `0.134 u` (≈160px) |
+| Belt advance interval | easy 3000ms, medium 2000ms, hard 1300ms per slot (≈21s / 14s / 9s end to end) |
+| Incinerator mouth | slot 7 |
+| Hop duration | 260ms of each interval, client-side only; the tray rests for the remainder |
 | Wrong-grab cooldown | 1500ms, that player only |
-| Claimable band | `0.02 ≤ u ≤ 0.94`, item state `traveling` |
+| Claimable slots | any of 0–7, item state `traveling` |
+
+One tray per slot, so the old minimum-gap rule is now structural rather than enforced.
 
 **Hand values.** Easy: 5–25¢, all one denomination — exactly the KC the lesson teaches.
 Medium: mixed, ≤ 50¢. Hard: mixed, ≤ 99¢. Hands are dealt **distinct-valued** across active
@@ -123,44 +131,67 @@ has exactly one file to read.
 ## The loop
 
 - **Simulate at 20 Hz** (50ms). Intents that arrived since the last tick are applied in arrival
-  order at the top of the tick.
-- **Broadcast belt frames at 10 Hz.** Positions are cheap to interpolate and expensive to spam.
+  order at the top of the tick. With stepped belts this rate no longer buys motion smoothness —
+  it is purely the resolution at which two claims can be told apart, plus the granularity of
+  cooldowns and door timers.
+- **Advance belts on their own beat**, not on the tick. Each belt carries an accumulator; when it
+  crosses its interval the belt steps once and broadcasts. Between beats there is nothing to say.
 - **Emit discrete events immediately** (`item/spawned`, `item/resolved`, `hand/dealt`,
   `score/patch`) rather than making the client diff frames to notice a tray vanished.
 - **Phases:** `lobby → playing → ended`, plus `paused` when every player is disconnected —
   freezing beats burning the belts down while a kid's wifi drops.
 
-### Motion: authoritative frames plus client extrapolation
+### Motion: discrete slots, advanced on a beat
 
-The tempting design is pure kinematics — send `{ spawnAtMs, speed }` once and let clients
-compute `u` from the clock forever. It falls apart the moment the incinerator doors close: a jam
-is a per-item history of stalls, and a claim in the middle of a jam re-shuffles everything
-behind it. Reconstructing that client-side is more machinery than it saves.
+A belt is an ordered array of **8 slots**, indexed `0` at the oven end to `7` at the incinerator
+mouth, and a slot holds at most one tray. Trays do not glide. On each **advance beat** every tray
+moves forward exactly one slot, or holds if the slot ahead is occupied. Between beats nothing
+moves.
 
-So: **the server sends 10 Hz frames of authoritative `u`, and the client extrapolates from the
-last two frames** at whatever framerate it renders. Snap on any frame that disagrees with the
-prediction by more than a tray width; otherwise ease toward truth.
+Server-side the move is instantaneous — one array shift per belt per beat. The visible hop is
+client-side decoration, played over `HOP_MS` (260ms) at the top of the beat, after which the tray
+sits still for the remaining ~1–2.7s. **That resting period is the point.** A second grader aiming
+at a stationary tray is aiming at a target rather than leading a moving one, and "which tray did
+you tap" has an unambiguous answer at every moment.
 
-Cost: 3 belts × ~8 trays × ~45B of JSON ≈ 1.1KB per frame, ~11KB/s per client, ~44KB/s for a
-full room. Fine. If it needs trimming, the frame goes to positional arrays with `u` as an
-integer 0–1000 and drops roughly 4×.
+This is why the earlier continuous design is gone. Streaming 10 Hz frames of authoritative `u` and
+extrapolating client-side existed to reconcile smooth motion against a jam's per-item history of
+stalls. With slots there is nothing to reconcile: a tray is in a slot or it is not, the client is
+told which, and no position is ever predicted. The interpolation buffer, the
+snap-if-off-by-more-than-a-tray-width rule and the easing all go away with it.
 
-**Clock sync** for extrapolation and for lag-compensated claims: a `time/sync` round trip on
-connect and every 10s, keeping the minimum-RTT sample of the last five to estimate offset.
+Cost: one `belt/advanced` per belt per beat — eight ids and a jam flag, ≈200B — at most one beat
+per 1300ms. Under 500B/s for a full room against roughly 44KB/s for the continuous design. The
+frame-trimming fallback (integer `u`, positional arrays) is not needed at all.
+
+**Beats are per belt and staggered**, by a phase offset of `interval × beltIndex / beltCount`, so
+three belts never lurch in unison. One synchronised lurch across the whole bakery reads as a
+stutter in the page rather than as machinery.
+
+**Claims address an `itemId`, not a slot**, so the claim wire format is untouched by any of this,
+and a claim sent mid-hop still resolves against occupancy the server settled at the beat.
+
+**Clock sync** survives, but only for lag-compensated claims — not for rendering, which no longer
+predicts anything. A `time/sync` round trip on connect and every 10s, keeping the minimum-RTT
+sample of the last five to estimate offset.
 
 ### Jams
 
-Each tray has a cap on how far it may travel:
+Occupancy *is* the jam rule; there is no separate cap to compute.
 
 ```
-capU(i) = MOUTH_U - i * (TRAY_U + GAP_U)     // i = index in the blocked queue
-u       = min(freeFlowU, capU(i))
+canAdvance(i)          = slots[i + 1] === null    // i < MOUTH_SLOT
+canAdvance(MOUTH_SLOT) = doorsOpen                // the mouth empties into the fire
 ```
 
-Doors closed → the lead tray stops at the mouth and the rest stack behind it. When the queue
-reaches the spawn point the belt is full: spawning is suppressed and `belt/jammed` goes out so
-the client can show the oven backing up. Nothing is wasted — throughput just dies, which is the
-intended easy-mode pressure.
+**Resolve each belt from the mouth backwards** (slot 7 first, then 6, 5, …). Iterating from the
+oven end instead lets the loop catch up with a tray it has already moved and walk it several slots
+in one beat — the conveyor equivalent of reading your own writes.
+
+Doors closed → the lead tray holds at slot 7 and the rest stack up behind it, one per beat. When
+slot 0 is still occupied at the next beat the belt is full: spawning is suppressed and
+`belt/jammed` goes out so the client can show the oven backing up. Nothing is wasted — throughput
+just dies, which is the intended easy-mode pressure.
 
 ### Claiming
 
@@ -243,8 +274,8 @@ Additions on top of that table:
 | `room/state` | `{ code, phase, players, config, game }` | Full snapshot: on join, on reconnect, on request. |
 | `player/connection` | `{ playerId, connected }` | A dropped player greys out; their slot and hand survive. |
 | `game/started` | `{ config, game }` | |
-| `item/spawned` | `{ beltId, item }` | |
-| `belt/frame` | `{ t, belts: [{ id, items: [{ id, u, price, state }] }], jammed: [beltId] }` | 10 Hz. |
+| `item/spawned` | `{ beltId, item }` | Spawns land in slot 0 on a beat, so this rides alongside that belt's `belt/advanced`. |
+| `belt/advanced` | `{ t, beltId, slots: [itemId \| null], jammed }` | One per belt per beat. Full occupancy rather than a diff — eight entries cost less than reconciling a patch, and a dropped message self-heals on the next beat. |
 | `item/resolved` | `{ itemId, outcome, byPlayerId?, errorType? }` | `served \| wasted`. |
 | `hand/dealt` | `{ playerId, coins: [coinId] }` | No value. Ever. |
 | `score/patch` | `{ served, wasted, target, wasteLimit, scores }` | |
@@ -263,7 +294,7 @@ than replaying history.
 | Reconnect | `resumeToken` in `sessionStorage`; `room/join` with it rebinds the slot and replies with a fresh `room/state`. |
 | Everyone drops | Phase → `paused`, sim frozen. Resumes on the first reconnect; the room is GC'd after 30s empty. |
 | Bad code | `ROOM_NOT_FOUND` → the kid-readable copy the lobby already renders. |
-| Tab backgrounded | `requestAnimationFrame` stalls and frames queue. On resume the client drops everything but the newest frame and snaps. No catch-up animation. |
+| Tab backgrounded | Hop animations stall and `belt/advanced` messages queue. On resume the client applies only the newest occupancy per belt and snaps trays into place. No catch-up hops. |
 | Scripted client | The server never trusts a position, a value, or a score. Claims are rate-limited and cooldown-checked. The worst a modified client achieves is grabbing trays it cannot afford — which costs its own team. |
 
 ## Testing
@@ -282,7 +313,7 @@ than replaying history.
 | # | Deliverable |
 | --- | --- |
 | M0 | `server/` skeleton: ws bootstrap, room registry, codes, lobby at parity with the fake adapter. `ws-room-adapter.js` behind the existing `net/index.js` swap. |
-| M1 | One belt end to end: spawn, motion, `belt/frame`, client render with extrapolation. No claiming yet. |
+| M1 | One belt end to end: spawn into slot 0, the advance beat, `belt/advanced`, client hop animation. No claiming yet. |
 | M2 | Dealer + hands + guaranteed match; claim resolution; served/wasted; win and loss. The game is playable here. |
 | M3 | Incinerator doors, jams, difficulty table, 2–3 belts, player-count scaling. |
 | M4 | Resilience: reconnect, host migration, pause, rate limits, clock sync. |
@@ -296,8 +327,10 @@ All client-side, and all needed before M1 pays off:
 
 - `views/bakery/game/` — belt, tray, hand panel, incinerator components. View-local, not
   shared, per the dependency rule.
-- A **render loop decoupled from the network**: an interpolation buffer holding the last two
-  `belt/frame`s, sampled by `requestAnimationFrame`.
+- A **hop animation per tray**, started on each `belt/advanced`. Await it with
+  `animationSettled()` from `lib/dom.js`, never `animation.finished` — a backgrounded tab never
+  settles the latter and the belt would deadlock. There is no interpolation buffer and no
+  prediction; the client is told the occupancy and animates to it.
 - A **local mirror** of game state in the view — not the store, since it is ephemeral and
   server-owned — updated by events.
 - **Claim on click/tap of a tray**, with the optimistic reach animation and rollback above.
@@ -306,7 +339,10 @@ All client-side, and all needed before M1 pays off:
 ## Open questions
 
 - Should a wrong grab cost both a waste *and* a cooldown, or is the cooldown enough? Two levers
-  on one mistake may be harsh for K–2. Tunable; needs a kid in front of it.
+  on one mistake may be harsh even for a second grader. Tunable; needs a kid in front of it.
+- Is 260ms the right hop, and should a tray be claimable *during* it? Claims address an `itemId`,
+  so a mid-hop claim already resolves correctly — but a tray that can be tapped while sliding
+  hands back some of the aiming problem the stepped belt exists to remove.
 - Can a player grab the tray reserved as another player's match? Currently yes — it is co-op,
   and the dealer re-schedules. The alternative (reserved trays dimmed for everyone else) is
   friendlier but leaks information about other players' hands.
