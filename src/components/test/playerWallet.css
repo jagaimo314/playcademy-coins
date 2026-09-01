@@ -1,0 +1,90 @@
+/* Styles for the player wallet test page only — nothing here ships. */
+
+#test {
+    margin: 0 auto;
+    padding: var(--pc-space-6) var(--pc-space-4) var(--pc-space-7);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: var(--pc-space-5);
+
+    /* The frame is a fixed 1200 wide; let a narrower window scroll to it. */
+    width: max-content;
+    min-width: 100%;
+}
+
+.pc-test-header {
+    max-width: 60rem;
+    width: 100%;
+}
+
+.pc-test-header p { color: var(--pc-ink-soft); }
+
+.pc-test-frame {
+    position: relative;
+    flex: none;
+    background: var(--pc-white);
+    border-radius: var(--pc-radius);
+    box-shadow: var(--pc-shadow);
+    overflow: hidden;
+
+    /*
+     * An outline, not a border — the same trick the Lesson's frame uses. The
+     * band inside has to measure from a true 1200x800 box, and a border would
+     * quietly take 5px off both.
+     */
+    outline: var(--pc-border);
+}
+
+.pc-test-frame__note {
+    position: absolute;
+    top: var(--pc-space-4);
+    left: var(--pc-space-5);
+    margin: 0;
+    font-size: var(--pc-text-sm);
+    color: var(--pc-ink-soft);
+}
+
+/* The base band: four equal slices, edge to edge. */
+.pc-test-band {
+    position: absolute;
+    left: 0;
+    right: 0;
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+}
+
+.pc-card {
+    width: 100%;
+    max-width: 60rem;
+}
+
+.pc-test-controls {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--pc-space-5);
+}
+
+.pc-test-slider {
+    display: flex;
+    align-items: center;
+    gap: var(--pc-space-3);
+    font-weight: 700;
+}
+
+.pc-test-slider__input { min-height: var(--pc-tap-min); }
+
+.pc-test-slider__value {
+    min-width: 4rem;
+    color: var(--pc-ink-soft);
+    font-variant-numeric: tabular-nums;
+}
+
+.pc-test-readout {
+    margin: var(--pc-space-4) 0 0;
+    font-size: var(--pc-text-sm);
+    font-weight: 700;
+    color: var(--pc-ink-soft);
+    font-variant-numeric: tabular-nums;
+}
