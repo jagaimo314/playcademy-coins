@@ -42,12 +42,16 @@
     box-shadow: var(--pc-shadow);
 }
 
-/* The chart hangs off the right edge of the frame, vertically centred. */
+/*
+ * The chart hangs off the right edge of the frame, its top edge level with the
+ * narrator's. The student's eye moves between the two constantly — a line being
+ * spoken and the cell it is about — so they start from the same height rather
+ * than the chart floating centred against a band of text.
+ */
 .pc-lesson__chart {
     position: absolute;
-    top: 50%;
+    top: var(--pc-space-5);
     right: var(--pc-lesson-grid-inset);
-    transform: translateY(-50%);
 }
 
 /*
@@ -163,10 +167,12 @@
 .pc-lesson__exit:hover { opacity: 1; }
 
 /*
- * Browsers refuse to speak before the first user gesture, so the lesson opens
- * behind this rather than auto-playing into silence.
+ * The card the lesson opens and closes on. It opens behind one because browsers
+ * refuse to speak before the first user gesture, so auto-playing would only
+ * play into silence; it closes behind another because "you are finished, here
+ * is the way out" is a decision to be taken, not a caption to be read.
  */
-.pc-lesson__start {
+.pc-lesson__card {
     position: absolute;
     inset: 0;
     z-index: 2;
@@ -179,7 +185,7 @@
     background: color-mix(in srgb, var(--pc-sky) 94%, transparent);
 }
 
-.pc-lesson__start-card {
+.pc-lesson__card-inner {
     display: flex;
     flex-direction: column;
     align-items: center;

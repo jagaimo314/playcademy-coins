@@ -49,15 +49,29 @@ const PILE_TOP = 200
 
 /** Coins per row in the pile, and the gap between them. */
 const PILE_COLUMNS = 5
-const PILE_GAP = 5
+const PILE_GAP = 15
 
-const GRID_CELL = 64
+/**
+ * A quarter's diameter and the chart's cell, deliberately the same number: a
+ * coin landing on the chart is then the size of the coin it came from in the
+ * pile. Smaller coins keep their real proportions against it — the ratios in
+ * `coin.css` scale off this value, so a dime never grows to a quarter's width.
+ */
+const COIN_SIZE = 70
+const GRID_CELL = COIN_SIZE
 
 /** Milliseconds between each coin landing on the chart. */
 const SKIP_DELAY = 550
 
 /** How long each coin holds its boundary while the pile is being counted. */
 const COUNT_STEP_MS = 700
+
+/**
+ * How long a right answer is left alone before the lesson moves on. The next
+ * problem builds a new chart, so without this the green star the student just
+ * earned is wiped in the same breath it appears.
+ */
+const CELEBRATE_MS = 1000
 
 /**
  * Floor on how long a narrated line stays up. Speech is muted, unsupported or
@@ -78,6 +92,24 @@ const MODE_LABELS = Object.freeze({
 })
 
 const delay = ms => new Promise(resolve => setTimeout(resolve, ms))
+
+/**
+ * The card the lesson opens and closes on: the whole frame given over to a
+ * title, a line of copy and exactly one button.
+ *
+ * Both ends want the same thing — one decision and nothing else on screen — so
+ * they are one card rather than two that drift apart. The opening one exists
+ * because browsers refuse to speak before a user gesture; the closing one
+ * because being finished is not another narrated line to scroll past.
+ */
+function createLessonCard({ title, body, button }) {
+    return el('div', { class: 'pc-lesson__card' },
+        el('div', { class: 'pc-lesson__card-inner pc-card' }, [
+            el('h1', {}, title),
+            el('p', {}, body),
+            button,
+        ]))
+}
 
 export function createLessonView({ store, navigate, params }) {
     const narrator = createNarrator()
@@ -180,9 +212,14 @@ export function createLessonView({ store, navigate, params }) {
         if (!isCorrect) {
             answer.update({ disabled: false })
             answer.focus()
+            return false
         }
 
-        return isCorrect
+        // Hold on the green star. Whatever comes next — the following beat or
+        // the next puzzle — is what takes it away.
+        await delay(CELEBRATE_MS)
+
+        return !cancelled
     }
 
     /**
@@ -297,12 +334,17 @@ export function createLessonView({ store, navigate, params }) {
 
         'skip-count': async () => {
             // Wipe the ordinals off the pile: the same coins are about to be
-            // captioned with the running total instead.
+            // walked a second time, and what they carried the first time round
+            // is not what they stand for now.
             pile.reset()
 
+            // The running total is read off the chart, not printed on the coin.
+            // Two numbers on one coin — the ordinal it just had and the total it
+            // now stands for — is the exact confusion skip-counting is meant to
+            // clear up, so the coin only says "counted".
             onGridReveal = ({ cell, index }) => {
                 grid.highlightCell(cell)
-                pile.markCoin(index, { selected: true, caption: formatCents(cell) })
+                pile.markCoin(index, { selected: true })
             }
 
             await grid.animateSkipCount(SKIP_DELAY)
@@ -330,7 +372,9 @@ export function createLessonView({ store, navigate, params }) {
 
     /**
      * Hand the pile over: every tap marks one coin, and the beat ends when the
-     * whole pile has been marked. `label` says what a tap writes under a coin.
+     * whole pile has been marked. `label` is called with how many coins are
+     * already done and returns what this tap writes under the coin — `null` for
+     * no caption at all, or `false` to refuse the tap.
      */
     function tapEveryCoin(label) {
         pile.reset()
@@ -342,7 +386,7 @@ export function createLessonView({ store, navigate, params }) {
             if (tapped.has(index)) return
 
             const caption = label(tapped.size)
-            if (caption === null) return
+            if (caption === false) return
 
             tapped.add(index)
             pile.markCoin(index, { selected: true, caption })
@@ -361,13 +405,14 @@ export function createLessonView({ store, navigate, params }) {
         'count-coins': () => tapEveryCoin(alreadyTapped => String(alreadyTapped + 1)),
 
         // The same gesture, one level up: each tap now lands a coin on the
-        // chart and captions it with the running total rather than the count.
+        // chart. The running total lives there and only there — the coin says it
+        // has been counted and nothing more.
         'skip-count': () => tapEveryCoin(() => {
             const cell = grid.revealNext()
-            if (cell === null) return null
+            if (cell === null) return false
 
             grid.highlightCell(cell)
-            return formatCents(cell)
+            return null
         }),
 
         answer: () => {
@@ -417,6 +462,30 @@ export function createLessonView({ store, navigate, params }) {
         { mode: 'freeplay', run: runFreeplay },
     ]
 
+    /**
+     * Close the lesson on the same card it opened on. The line is still spoken,
+     * but it does not live in the narrator's caption band: every other line of
+     * the lesson has passed through there and gone, and the one that says the
+     * student is finished — and carries the way out — has to stay put.
+     */
+    function showFinishedCard() {
+        const backButton = el('button', {
+            type: 'button',
+            class: 'pc-button pc-button--blue',
+            onClick: () => navigate('/'),
+        }, 'Back to menu')
+
+        frame.appendChild(createLessonCard({
+            title: 'You did it!',
+            body: 'You counted every pile. The Bakery is open now.',
+            button: backButton,
+        }))
+
+        // Nobody touched a control to get here, so the focus has to be moved
+        // deliberately — the button is the only thing left to do.
+        backButton.focus()
+    }
+
     async function run(from) {
         const start = Math.max(0, PHASES.findIndex(phase => phase.mode === from))
 
@@ -434,6 +503,8 @@ export function createLessonView({ store, navigate, params }) {
         // The Bakery gate opens here, and only here — finishing the ten is what
         // the lesson is for.
         store.set('lesson.completed', true)
+
+        showFinishedCard()
 
         await narrator.say('You did it! You counted every pile. The Bakery is open now.')
     }
@@ -457,13 +528,11 @@ export function createLessonView({ store, navigate, params }) {
         },
     }, 'Start')
 
-    const startCard = el('div', { class: 'pc-lesson__start' }, [
-        el('div', { class: 'pc-lesson__start-card pc-card' }, [
-            el('h1', {}, 'Counting coins that match'),
-            el('p', {}, 'We will count a pile of coins the fast way.'),
-            startButton,
-        ]),
-    ])
+    const startCard = createLessonCard({
+        title: 'Counting coins that match',
+        body: 'We will count a pile of coins the fast way.',
+        button: startButton,
+    })
 
     const frame = el('div', {
         class: 'pc-lesson__frame',
@@ -473,6 +542,7 @@ export function createLessonView({ store, navigate, params }) {
             height: `${FRAME.height}px`,
             '--pc-lesson-grid-inset': `${GRID_INSET}px`,
             '--pc-lesson-pile-top': `${PILE_TOP}px`,
+            '--pc-coin-size': `${COIN_SIZE}px`,
         },
     }, [
         el('div', { class: 'pc-lesson__narration' }, narrator.el),

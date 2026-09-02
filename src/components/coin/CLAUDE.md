@@ -66,20 +66,22 @@ see how `lesson.view.js` swaps meaning per beat.
 **Never set `width`/`height` on `.pc-coin`.** Size comes from `--pc-coin-size` (a quarter)
 scaled by each coin's `--pc-coin-ratio`, which is its real diameter against a quarter's. A
 pile keeps the proportions a child sees in their hand. Raise `--pc-coin-size` on an
-ancestor to scale a whole pile in step. The one place that overrides this is the chart's
-ghost coin (`.pc-currencygrid__ghost .pc-coin`), which must fit a fixed cell.
+ancestor to scale a whole pile in step — that is how the chart fits a coin to its cell
+too, by setting the property to the cell size rather than by overriding a width.
 
-**`caption` is the running-total slot** — `update({ caption: '15¢' })` writes under the
-coin, `caption: null` clears it. The Lesson uses it twice per problem: ordinals while the
-pile is counted, then running cents while it is skip-counted.
+**`caption` is the slot under the coin** — `update({ caption: '3' })` writes there,
+`caption: null` clears it. The Lesson uses it for the ordinals while the pile is counted
+one by one, and for nothing else: during the skip count the running total is on the chart,
+and printing it on the coin as well is the confusion the chart is there to clear up.
 
 ## Accessibility
 
 - The accessible name is `"nickel, 5¢"` and is set from `lib/money.js`, so it stays right
   when the artwork changes. Artwork is `aria-hidden`.
-- `is-selected` is a visible outline **and** sets `aria-pressed` on interactive coins.
-  Never let the outline be the only signal that a coin has been counted — pair it with a
-  caption, as the Lesson does.
+- `is-selected` draws a ring **and** sets `aria-pressed` on interactive coins, and the
+  `aria-pressed` half is the one that must not be skipped: `coin-pile` suppresses the
+  coin's own ring and draws its mark round the slot instead, so a coin's counted state
+  cannot be left resting on that ring alone.
 - Interactive coins are real `<button>`s, so they are keyboard-reachable for free. Keep it
   that way: if you add a click target, add it as a button, not a click handler on a div.
 
@@ -99,8 +101,10 @@ the shared `PROFILE` bust and add the one feature a child can name.
 ## Who uses it
 
 - `components/coin-pile` — rows of coins, plus the boundary/flip gestures the Lesson needs.
-- `components/SkipCountCurrencyGrid` — a ghosted coin per interval, inside a
-  `foreignObject`. `.pc-currencygrid__ghost` resizes it to the cell and hides
-  `.pc-coin__face`, because the cell label already shows the running total.
+  Each coin sits in a slot so the counted-coin mark can be a rounded rect outside the disc;
+  the pile still passes `selected` down for the accessible state.
+- `components/SkipCountCurrencyGrid` — a ghosted `Heads` coin per interval, inside a
+  `foreignObject` that sets `--pc-coin-size` to the cell size. A quarter therefore fills
+  its cell and a dime does not, which is the whole point of drawing real coins there.
 - `src/components/test/coins.html` — every denomination × every face, plus a live flip.
   Open it after any change here.

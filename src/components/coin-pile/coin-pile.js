@@ -45,6 +45,15 @@ export function createCoinPile({
         onClick: interactive ? () => onCoinTap(index) : null,
     }))
 
+    /**
+     * One slot per coin, and the reason the pile has them at all: the mark drawn
+     * round a counted coin is a rounded rect, and neither shape nor placement
+     * can come from the coin itself. A coin's own outline takes the coin's pill
+     * radius — a circle round a circle — and anything drawn inside a coin is
+     * clipped to the disc. The slot is the box the mark can live in.
+     */
+    const slots = coins.map(instance => el('div', { class: 'pc-pile__slot' }, instance.el))
+
     const box = el('div', { class: 'pc-pile__box', hidden: true })
 
     const root = el('div', {
@@ -58,7 +67,7 @@ export function createCoinPile({
         role: interactive ? 'group' : 'img',
         'aria-label': `${describeCount(count, denomination)} to count`,
     }, [
-        el('div', { class: 'pc-pile__coins' }, coins.map(instance => instance.el)),
+        el('div', { class: 'pc-pile__coins' }, slots),
         box,
     ])
 
@@ -118,16 +127,26 @@ export function createCoinPile({
 
         /**
          * Mark one coin: `{ selected }` draws a boundary round it, `caption`
-         * writes underneath it. Used for both counting passes — the ordinals
-         * first, then the running total.
+         * writes underneath it. Used by both counting passes — the ordinals as
+         * the pile is counted one by one, then the boundary alone as it is
+         * skip-counted, because that running total belongs on the chart.
+         *
+         * The boundary is drawn on the slot, but `selected` still goes to the
+         * coin: that is what puts the state on an interactive coin's
+         * `aria-pressed`, and the mark must never be visual only.
          */
         markCoin(index, next) {
             coins[index]?.update(next)
+
+            if (next?.selected !== undefined) {
+                slots[index]?.classList.toggle('is-marked', next.selected)
+            }
         },
 
         /** Clear every boundary and caption, ready for the next pass. */
         reset() {
             for (const instance of coins) instance.update({ selected: false, caption: null })
+            for (const slot of slots) slot.classList.remove('is-marked')
         },
 
         destroy() {

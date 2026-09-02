@@ -13,6 +13,37 @@
 }
 
 /*
+ * One coin's slot, and the boundary drawn round it once it has been counted.
+ *
+ * The mark is a rounded rect rather than a ring on the coin, and that is why
+ * the slot exists: an outline on a coin takes the coin's own pill radius, so it
+ * can only ever be a circle round a circle, and anything drawn inside a coin is
+ * clipped to the disc. Sitting outside the coin, the mark reads as a box put
+ * down round the coin being counted — the gesture a teacher's finger makes.
+ */
+.pc-pile__slot {
+    position: relative;
+    display: inline-flex;
+}
+
+.pc-pile__slot.is-marked::after {
+    content: '';
+    position: absolute;
+    /*
+     * Clear of the disc, but well clear of the next coin's mark too: at a gap
+     * of 15px, a mark any further out than this leaves the row reading as one
+     * long band instead of three coins that have each been counted.
+     */
+    inset: -4px;
+    border: 3px solid var(--pc-blue-ink, #2668B0);
+    border-radius: 10px;
+    pointer-events: none;
+}
+
+/* The coin's own ring would sit inside this one, saying the same thing twice. */
+.pc-pile__slot .pc-coin.is-selected { outline: none; }
+
+/*
  * The boundary round the whole pile. Positioned outside the coins and out of
  * the layout entirely, so drawing it cannot nudge a single coin sideways.
  */

@@ -1,4 +1,4 @@
-import { svg } from '../lib/dom.js'
+import { el, svg } from '../lib/dom.js'
 import { coin, describeCount, formatCents } from '../lib/money.js'
 import { createCoin } from './coin/coin.js'
 import { SkipCountGrid } from './SkipCountGrid.js'
@@ -63,10 +63,20 @@ export class SkipCountCurrencyGrid extends SkipCountGrid {
     /**
      * A ghosted instance of the real coin component, rather than a lookalike —
      * the coin a kid sees on the chart should be the coin they see in the pile.
+     * It rests on `Heads`, the picture side, for the same reason: reading a coin
+     * from its portrait is the skill, and the cell label already says the value.
+     *
+     * The cell is what sizes it, through `--pc-coin-size` rather than a width:
+     * a quarter then fills its cell and every smaller coin keeps its real
+     * diameter against one, which is the only cue a child has for telling a dime
+     * from a nickel before they can name either.
      */
     createSkipIndicator() {
         const size = this.cellSize
-        const instance = createCoin({ denomination: this.denomination })
+        const instance = createCoin({
+            denomination: this.denomination,
+            displayType: 'Heads',
+        })
 
         this.#coins.push(instance)
 
@@ -76,7 +86,8 @@ export class SkipCountCurrencyGrid extends SkipCountGrid {
             y: -size / 2,
             width: size,
             height: size,
-        }, instance.el)
+            style: { '--pc-coin-size': `${size}px` },
+        }, el('div', { class: 'pc-currencygrid__ghost-fit' }, instance.el))
     }
 
     describe() {
