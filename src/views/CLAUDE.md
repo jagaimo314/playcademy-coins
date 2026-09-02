@@ -95,16 +95,36 @@ Two rules when editing this flow:
 
 ### The frame
 
-A fixed **1200×800** box, centred in the viewport, with everything positioned against it —
-a hundred-chart whose cells drift with the viewport is no use for pointing at. Three things
-about it are load-bearing:
+One **1280×720 design box**, laid out once and then scaled to the display — a hundred-chart
+whose cells drift with the viewport is no use for pointing at, and a layout that rearranges
+itself per size is a different lesson at every size. Every offset in `lesson.css` is a
+design pixel measured from that box; the window only decides how big a design pixel is.
+
+**The vertical arithmetic is the design, and it has to add up**: 20 of toolbar, 10 of gap,
+680 of chart (ten cells of 68), 10 of dead space — 720, which against 1280 across is 16:9.
+`DESIGN_HEIGHT` is derived from those constants rather than typed, so the sum cannot drift;
+a cell size other than 68 trades the aspect ratio for something else.
+
+Load-bearing, all of it:
 
 - `.pc-lesson-stage` is `position: fixed`, which is how the view escapes `#app`'s centred
-  60rem column.
-- The frame's edge is an **`outline`, not a `border`**, so it takes up no layout and the
-  15px / 200px offsets inside are measured from the 1200×800 box itself.
-- The frame gets `margin: auto` inside a flex scroll container. `justify-content: center`
-  would push its left edge somewhere the scrollbar cannot reach on a small display.
+  60rem column, and it is the box the `ResizeObserver` measures.
+- **Height leads the scale, width holds a veto** — a frame wider than the window puts the
+  chart off the side of it — and the floor beats both: below `MIN_FRAME_HEIGHT` (400 real
+  pixels) the frame stops shrinking and the stage clips and scrolls instead.
+- `.pc-lesson__fit` exists because a transform takes up **no layout**. It carries the
+  scaled footprint so centring and scrolling have something to work with, and it gets
+  `margin: auto`: `justify-content: center` would push the left edge somewhere the
+  scrollbar cannot reach on a small display.
+- The chart is placed by its **cells**, not its box. The SVG pads itself so its border
+  stroke is not clipped, and `loadProblem()` takes that padding back off the offset — which
+  is what puts the first row of cells on `CONTENT_TOP` and the last on 710.
+- The dark blue border is one background, the frame's own, with the white
+  `.pc-lesson__panel` inset over it. The panel is **decorative** — everything positions
+  against the design box, not against the panel — which is what lets the toolbar's colour
+  read as a border on all four sides.
+- The 20px toolbar's controls give up `--pc-tap-min` and the hard shadows. They are chrome
+  for whoever is running the lesson rather than part of it, and they scale with the frame.
 
 `?mode=guided|freeplay` skips ahead — a stand-in for resuming, and the only way to reach a
 later mode without playing the earlier ones.

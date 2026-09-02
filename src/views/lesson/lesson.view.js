@@ -17,11 +17,16 @@ import './lesson.css'
 /**
  * The skip-count-by-like-denomination lesson.
  *
- * The screen is a fixed 1200x800 frame so the geometry is the same on every
- * display — a hundred-chart whose cells drift with the viewport is no use for
- * pointing at. Everything inside is positioned against that frame: the narrator
- * top left, the chart hanging off the right edge, and the pile, the question
- * and the answer in the space between them.
+ * The screen is one 16:9 frame, laid out once against 1280x720 design pixels
+ * and then scaled to fit the display — a hundred-chart whose cells drift with
+ * the viewport is no use for pointing at, and a layout that rearranges itself
+ * per size is a different lesson at every size. Everything inside is positioned
+ * against that box: chrome in a bar along the top, the narrator below it on the
+ * left, the chart hanging off the right edge, and the pile, the question and
+ * the answer in the space between them.
+ *
+ * The height is what the design turns on. Read the constants below downwards
+ * and they add up to it: bar, gap, chart, dead space.
  *
  * Three modes run in order, and each hands over only when the student has an
  * answer marked right:
@@ -38,13 +43,44 @@ import './lesson.css'
  * judged — and only then does the count run.
  */
 
-/** The frame every lesson element lives inside. */
-const FRAME = Object.freeze({ width: 1200, height: 800 })
+/** Design width. Every number in this file and in `lesson.css` is one of these. */
+const DESIGN_WIDTH = 1280
 
-/** Gap between the chart's right edge and the frame's. */
+/** The chrome bar across the top, and the dark blue it leaves round the rest. */
+const TOOLBAR_HEIGHT = 20
+const BORDER = 10
+
+/**
+ * Where the lesson proper starts: one border below the bar. The narrator's band
+ * and the chart's first row of cells both begin on this line.
+ */
+const CONTENT_TOP = TOOLBAR_HEIGHT + BORDER
+
+/** The chart, and the size of one cell. */
+const GRID_ROWS = 10
+const GRID_COLS = 10
+const GRID_CELL = 68
+
+/**
+ * The design height, derived rather than typed so the arithmetic cannot drift:
+ * 20 of bar, 10 of gap, 680 of chart, 10 of dead space underneath — 720, which
+ * against 1280 across is 16:9. 68 is the cell size that makes that true, so
+ * changing it trades the aspect ratio for whatever it changes to.
+ */
+const DESIGN_HEIGHT = CONTENT_TOP + GRID_ROWS * GRID_CELL + BORDER
+
+/**
+ * A quarter's diameter, which is the chart's cell size on purpose: a coin
+ * landing on the chart is then the size of the coin it came from in the pile.
+ * Smaller coins keep their real proportions against it — the ratios in
+ * `coin.css` scale off this value, so a dime never grows to a quarter's width.
+ */
+const COIN_SIZE = GRID_CELL
+
+/** Gap between the chart's right edge and the design box's. */
 const GRID_INSET = 15
 
-/** Where the pile starts, from the frame's top edge. The narrator has the rest. */
+/** Where the pile starts, from the design box's top. The narrator has the rest. */
 const PILE_TOP = 200
 
 /** Coins per row in the pile, and the gap between them. */
@@ -52,13 +88,12 @@ const PILE_COLUMNS = 5
 const PILE_GAP = 15
 
 /**
- * A quarter's diameter and the chart's cell, deliberately the same number: a
- * coin landing on the chart is then the size of the coin it came from in the
- * pile. Smaller coins keep their real proportions against it — the ratios in
- * `coin.css` scale off this value, so a dime never grows to a quarter's width.
+ * Never draw the frame shorter than this many real pixels. Scaling below it
+ * makes a lesson nobody can read, so the scale stops here and the stage clips
+ * and scrolls instead.
  */
-const COIN_SIZE = 70
-const GRID_CELL = COIN_SIZE
+const MIN_FRAME_HEIGHT = 400
+const MIN_SCALE = MIN_FRAME_HEIGHT / DESIGN_HEIGHT
 
 /** Milliseconds between each coin landing on the chart. */
 const SKIP_DELAY = 550
@@ -242,8 +277,8 @@ export function createLessonView({ store, navigate, params }) {
         })
 
         grid = new SkipCountCurrencyGrid({
-            numRows: 10,
-            numCols: 10,
+            numRows: GRID_ROWS,
+            numCols: GRID_COLS,
             cellSize: GRID_CELL,
             denomination: next.denomination,
             numCoins: next.count,
@@ -256,6 +291,13 @@ export function createLessonView({ store, navigate, params }) {
         // The work column fills whatever the chart leaves it, so it has to be
         // told how wide the chart came out.
         frame.style.setProperty('--pc-lesson-grid-width', `${grid.el.getAttribute('width')}px`)
+
+        // The chart is placed by its cells, not by its box. The SVG carries a
+        // little padding so its border stroke is not clipped, and the design
+        // puts the first *cell* on CONTENT_TOP — so the padding comes off the
+        // offset rather than pushing every row of the chart down by it.
+        const pad = (Number(grid.el.getAttribute('height')) - grid.height) / 2
+        frame.style.setProperty('--pc-lesson-chart-top', `${CONTENT_TOP - pad}px`)
 
         answer.clear()
         answer.update({ disabled: true })
@@ -534,47 +576,104 @@ export function createLessonView({ store, navigate, params }) {
         button: startButton,
     })
 
-    const frame = el('div', {
-        class: 'pc-lesson__frame',
-        dataset: { mode: 'instruction' },
-        style: {
-            width: `${FRAME.width}px`,
-            height: `${FRAME.height}px`,
-            '--pc-lesson-grid-inset': `${GRID_INSET}px`,
-            '--pc-lesson-pile-top': `${PILE_TOP}px`,
-            '--pc-coin-size': `${COIN_SIZE}px`,
-        },
-    }, [
-        el('div', { class: 'pc-lesson__narration' }, narrator.el),
-        el('div', { class: 'pc-lesson__work' }, [pileHolder, answer.el]),
-        chartHolder,
-
-        el('div', { class: 'pc-lesson__status' }, [modeLabel, progress.el]),
-
-        // Not lesson furniture: the way back out, plus the unlock the Bakery
-        // gate needs before anyone has sat through all ten puzzles.
-        el('div', { class: 'pc-lesson__footer' }, [
+    /*
+     * Everything that is not the lesson, in one 20px bar along the top: the way
+     * back out, the unlock the Bakery gate needs before anyone has sat through
+     * all ten puzzles, which mode is running and how far through the puzzles
+     * the student is. Above the lesson rather than below it, so the white panel
+     * underneath holds nothing but the work.
+     */
+    const toolbar = el('div', { class: 'pc-lesson__toolbar' }, [
+        el('div', { class: 'pc-lesson__toolbar-group' }, [
             el('button', {
                 type: 'button',
-                class: 'pc-button pc-button--quiet pc-lesson__exit',
+                class: 'pc-button pc-button--quiet',
                 onClick: () => navigate('/'),
             }, 'Back to menu'),
             el('button', {
                 type: 'button',
-                class: 'pc-button pc-button--quiet pc-lesson__exit',
+                class: 'pc-button pc-button--quiet',
                 onClick: () => {
                     store.set('lesson.completed', true)
                     navigate('/')
                 },
             }, 'Dev: mark lesson complete'),
         ]),
+        el('div', { class: 'pc-lesson__toolbar-group' }, [modeLabel, progress.el]),
+    ])
+
+    const frame = el('div', {
+        class: 'pc-lesson__frame',
+        dataset: { mode: 'instruction' },
+    }, [
+        // First, so it is painted behind: the white ground, inset far enough on
+        // every side to leave the toolbar's dark blue showing as a border.
+        el('div', { class: 'pc-lesson__panel' }),
+
+        toolbar,
+        el('div', { class: 'pc-lesson__narration' }, narrator.el),
+        el('div', { class: 'pc-lesson__work' }, [pileHolder, answer.el]),
+        chartHolder,
 
         startCard,
     ])
 
+    /*
+     * The frame is scaled with a transform, which takes up no layout at all, so
+     * the box that centring and scrolling can see has to be this one — sized to
+     * what the frame comes out as once scaled.
+     */
+    const fitBox = el('div', { class: 'pc-lesson__fit' }, frame)
+
     // Fixed rather than in the document flow: the frame is a fixed size by
     // design, so it is centred against the viewport, not against #app's column.
-    const root = el('section', { class: 'pc-lesson-stage' }, frame)
+    const root = el('section', {
+        class: 'pc-lesson-stage',
+        style: {
+            '--pc-lesson-width': `${DESIGN_WIDTH}px`,
+            '--pc-lesson-height': `${DESIGN_HEIGHT}px`,
+            '--pc-lesson-toolbar-height': `${TOOLBAR_HEIGHT}px`,
+            '--pc-lesson-border': `${BORDER}px`,
+            '--pc-lesson-content-top': `${CONTENT_TOP}px`,
+            '--pc-lesson-grid-inset': `${GRID_INSET}px`,
+            '--pc-lesson-pile-top': `${PILE_TOP}px`,
+            '--pc-coin-size': `${COIN_SIZE}px`,
+        },
+    }, fitBox)
+
+    /**
+     * Fit the design box to the display, and keep fitting it.
+     *
+     * Height leads: the design is a stack of heights that has to add up, so how
+     * much height there is decides how big a design pixel gets to be. Width
+     * still holds a veto, because a frame wider than the window puts the chart
+     * off the side of it. The floor beats both — below `MIN_FRAME_HEIGHT` the
+     * lesson stops shrinking and the stage clips and scrolls instead.
+     */
+    let scale = 0
+
+    function fit() {
+        const { clientWidth, clientHeight } = root
+
+        // Not laid out yet; the observer will call again when it is.
+        if (!clientWidth || !clientHeight) return
+
+        const next = Math.max(
+            MIN_SCALE,
+            Math.min(clientHeight / DESIGN_HEIGHT, clientWidth / DESIGN_WIDTH),
+        )
+
+        // A scrollbar arriving or leaving changes the box that chose the scale,
+        // which can otherwise chase itself round the observer a frame at a
+        // time. Ignoring changes too small to see is what settles it.
+        if (Math.abs(next - scale) < 0.002) return
+
+        scale = next
+        root.style.setProperty('--pc-lesson-scale', String(scale))
+    }
+
+    const resizes = new ResizeObserver(fit)
+    resizes.observe(root)
 
     loadProblem(INSTRUCTION_PROBLEM)
 
@@ -582,6 +681,7 @@ export function createLessonView({ store, navigate, params }) {
         el: root,
         destroy() {
             cancelled = true
+            resizes.disconnect()
             // Whatever the flow is parked on, let it go — an unsettled gate
             // holds every closure in this view alive.
             pendingGate?.settle(false)

@@ -145,7 +145,9 @@ visible, label every control, and keep hit targets at `--pc-tap-min`.
 - **`el()`'s `style` prop supports `--custom` properties** via `setProperty`.
   `Object.assign(node.style, …)` drops them silently — that bug cost the grid its label
   scaling once already.
-- The Lesson's frame is `position: fixed`, which is how it escapes `#app`'s centred 60rem
-  column. Its edge is an `outline`, not a `border`, so inner offsets measure from the
-  1200×800 box.
+- The Lesson is laid out against a **1280×720 design box** and scaled to the display by a
+  `ResizeObserver`; its stage is `position: fixed`, which is how it escapes `#app`'s
+  centred 60rem column. Every offset inside is a design pixel measured from that box, and
+  the box's height is derived from the toolbar / gap / chart / dead-space constants rather
+  than typed — see `views/CLAUDE.md`.
 - `destroy()` is where this app leaks. See the checklist in `views/CLAUDE.md`.

@@ -1,70 +1,112 @@
 /*
- * The lesson is a fixed 1200x800 frame, centred in the viewport. It steps out
- * of #app's centred column on purpose: the chart's geometry has to be the same
- * everywhere, so the frame is sized in pixels and the viewport only decides
- * where it sits.
+ * The lesson is one 16:9 box, laid out once against 1280x720 design pixels and
+ * then scaled to whatever the screen gives it. Nothing inside reflows: a
+ * hundred-chart whose cells drift with the viewport is no use for pointing at,
+ * and a layout that rearranges itself per size is a different lesson at every
+ * size. The window decides how big a design pixel is and nothing else.
+ *
+ * Every number below is therefore a design pixel, and the view owns the ones
+ * the geometry turns on — see the constants at the top of `lesson.view.js`.
  */
 .pc-lesson-stage {
     position: fixed;
     inset: 0;
     z-index: 1;
 
+    /* Replaced by the view's ResizeObserver; this is only the first paint. */
+    --pc-lesson-scale: 1;
+
     display: flex;
-    padding: var(--pc-space-4);
     overflow: auto;
     background: var(--pc-sky);
 }
 
 /*
- * The frame's edge is an outline rather than a border so it takes up no layout:
- * every offset inside the frame is then measured from the 1200x800 box itself,
- * not from 1200x800 minus two border widths.
+ * The scaled footprint. A transform takes up no layout, so the box that
+ * centring and scrolling see cannot be the frame itself — it has to be this
+ * one, sized to what the frame comes out as once scaled.
  */
-.pc-lesson__frame {
-    position: relative;
+.pc-lesson__fit {
     flex: 0 0 auto;
     /*
      * `margin: auto` rather than the stage centring its own content: on a
-     * display too small for 1200x800 that keeps the overflow reachable, where
-     * `justify-content: center` would push the frame's left edge somewhere the
+     * display too small for the frame that keeps the overflow reachable, where
+     * `justify-content: center` would push the left edge somewhere the
      * scrollbar cannot follow.
      */
     margin: auto;
+
+    width: calc(var(--pc-lesson-width) * var(--pc-lesson-scale));
+    height: calc(var(--pc-lesson-height) * var(--pc-lesson-scale));
+}
+
+/*
+ * The design box. It lies flat — no outline, no shadow, no radius — because the
+ * only frame the lesson has now is the dark blue the toolbar leaves round it,
+ * which is this element's own background showing past the white panel.
+ *
+ * Scaled from its top left corner, which is what lets `.pc-lesson__fit` above
+ * predict its footprint as a plain multiplication.
+ */
+.pc-lesson__frame {
+    position: relative;
+    width: var(--pc-lesson-width);
+    height: var(--pc-lesson-height);
+    transform: scale(var(--pc-lesson-scale));
+    transform-origin: top left;
 
     /* Everything left of the chart shares this column. */
     --pc-lesson-work-width: calc(
         100% - var(--pc-lesson-grid-inset) - var(--pc-lesson-grid-width)
     );
 
-    background: var(--pc-white);
-    outline: var(--pc-border);
-    border-radius: var(--pc-radius);
-    box-shadow: var(--pc-shadow);
+    background: var(--pc-blue-ink);
 }
 
 /*
- * The chart hangs off the right edge of the frame, its top edge level with the
- * narrator's. The student's eye moves between the two constantly — a line being
- * spoken and the cell it is about — so they start from the same height rather
- * than the chart floating centred against a band of text.
+ * The white ground the lesson works on. Decorative only: every element is
+ * positioned against the design box itself rather than against this, so the
+ * panel can be a plain rectangle painted behind them — and the border it leaves
+ * showing is the same dark blue as the toolbar, on all four sides.
+ */
+.pc-lesson__panel {
+    position: absolute;
+    top: var(--pc-lesson-content-top);
+    left: var(--pc-lesson-border);
+    right: var(--pc-lesson-border);
+    bottom: var(--pc-lesson-border);
+
+    background: var(--pc-white);
+}
+
+/*
+ * The chart hangs off the right edge, and it is positioned by its *cells* and
+ * not by its box: the SVG carries a couple of pixels of padding so its border
+ * stroke is not clipped, and the design puts the first row of cells 10px below
+ * the toolbar. `loadProblem()` measures that padding off the built chart and
+ * folds it into this offset.
  */
 .pc-lesson__chart {
     position: absolute;
-    top: var(--pc-space-5);
+    top: var(--pc-lesson-chart-top);
     right: var(--pc-lesson-grid-inset);
 }
 
 /*
- * The narrator takes the top left corner — the band above the pile is its own,
- * and it is sized to fit so a long line can never reach down into the coins.
+ * The narrator takes the top left corner, its top edge level with the chart's
+ * first cell — the student's eye moves between the two constantly, a line being
+ * spoken and the cell it is about. The band is sized to fit so a long line can
+ * never reach down into the coins.
  */
 .pc-lesson__narration {
     position: absolute;
-    top: var(--pc-space-5);
+    top: var(--pc-lesson-content-top);
     left: var(--pc-space-5);
 
     width: calc(var(--pc-lesson-work-width) - 2 * var(--pc-space-5));
-    height: calc(var(--pc-lesson-pile-top) - 2 * var(--pc-space-5));
+    height: calc(
+        var(--pc-lesson-pile-top) - var(--pc-lesson-content-top) - var(--pc-space-5)
+    );
 }
 
 .pc-lesson__narration .pc-narrator { height: 100%; }
@@ -120,51 +162,84 @@
 
 /* ------------------------------------------------------------------ chrome */
 
-.pc-lesson__status {
+/*
+ * One bar across the top for everything that is not the lesson: the way out,
+ * the dev unlock, which mode is running and how far through the ten puzzles the
+ * student is. It sits above the lesson rather than under it so the white panel
+ * below holds nothing but the work.
+ */
+.pc-lesson__toolbar {
     position: absolute;
-    right: var(--pc-space-5);
-    bottom: var(--pc-space-5);
+    top: 0;
+    left: 0;
+    right: 0;
+    height: var(--pc-lesson-toolbar-height);
 
     display: flex;
     align-items: center;
-    gap: var(--pc-space-4);
+    justify-content: space-between;
+    gap: var(--pc-space-3);
+    padding: 0 var(--pc-space-2);
+
+    background: var(--pc-blue-ink);
+    color: var(--pc-white);
 }
+
+.pc-lesson__toolbar-group {
+    display: flex;
+    align-items: center;
+    gap: var(--pc-space-2);
+}
+
+/*
+ * The bar is 20 design pixels tall, so its controls give up the app's tap
+ * minimum and its hard offset shadows — nothing that size can carry them. They
+ * are chrome for whoever is running the lesson rather than part of it, and they
+ * scale with the frame, so on any display larger than the design box they come
+ * out larger than these numbers read.
+ */
+.pc-lesson__toolbar .pc-button {
+    min-height: 0;
+    height: 16px;
+    padding: 0 var(--pc-space-2);
+    border-width: 1.5px;
+    border-radius: var(--pc-radius-pill);
+    box-shadow: none;
+    font-size: 11px;
+    line-height: 1;
+}
+
+/* Pressing into a shadow that is not there would just jog the bar. */
+.pc-lesson__toolbar .pc-button:active:not(:disabled) { transform: none; }
 
 .pc-lesson__mode {
     margin: 0;
     font-family: var(--pc-font-display);
-    font-size: var(--pc-text-sm);
+    font-size: 11px;
     font-weight: 800;
-    color: var(--pc-ink-soft);
+    color: var(--pc-white);
     white-space: nowrap;
 }
 
-.pc-lesson__status .pc-progress { width: 12rem; }
+.pc-lesson__toolbar .pc-progress {
+    width: 9rem;
+    gap: var(--pc-space-2);
+}
+
+.pc-lesson__toolbar .pc-progress__track {
+    height: 10px;
+    border-width: 1.5px;
+}
+
+.pc-lesson__toolbar .pc-progress__text {
+    font-size: 11px;
+    color: var(--pc-white);
+}
 
 /* Position through ten puzzles only means something once they have started. */
-.pc-lesson__frame:not([data-mode='freeplay']) .pc-lesson__status .pc-progress {
+.pc-lesson__frame:not([data-mode='freeplay']) .pc-lesson__toolbar .pc-progress {
     display: none;
 }
-
-.pc-lesson__footer {
-    position: absolute;
-    left: var(--pc-space-5);
-    bottom: var(--pc-space-5);
-
-    display: flex;
-    gap: var(--pc-space-3);
-    align-items: center;
-}
-
-.pc-lesson__exit {
-    min-height: 2.5rem;
-    padding: 0 var(--pc-space-4);
-    font-size: var(--pc-text-sm);
-    border-radius: var(--pc-radius-pill);
-    opacity: 0.8;
-}
-
-.pc-lesson__exit:hover { opacity: 1; }
 
 /*
  * The card the lesson opens and closes on. It opens behind one because browsers
@@ -181,7 +256,6 @@
     align-items: center;
     justify-content: center;
 
-    border-radius: var(--pc-radius);
     background: color-mix(in srgb, var(--pc-sky) 94%, transparent);
 }
 
