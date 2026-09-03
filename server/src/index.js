@@ -116,7 +116,7 @@ wss.on('connection', socket => {
         // Anything else before a room is a client that has not read the
         // contract; there is no sensible room to route it to.
         if (!bound) {
-            reply('error', { code: 'INVALID_ACTION', message: 'Join a bakery first.' })
+            reply('error', { code: 'INVALID_ACTION', message: 'Join a bake sale first.' })
             return
         }
 
@@ -137,7 +137,7 @@ wss.on('connection', socket => {
 
     function enterRoom({ type, payload }) {
         if (bound) {
-            reply('error', { code: 'INVALID_ACTION', message: 'Already in a bakery.' })
+            reply('error', { code: 'INVALID_ACTION', message: 'Already in a bake sale.' })
             return
         }
 
@@ -148,7 +148,7 @@ wss.on('connection', socket => {
             : registry.get(code)
 
         if (!room) {
-            reply('error', { code: 'ROOM_NOT_FOUND', message: 'That bakery code is not right.' })
+            reply('error', { code: 'ROOM_NOT_FOUND', message: 'That bake sale code is not right.' })
             return
         }
 
@@ -176,7 +176,7 @@ wss.on('connection', socket => {
         })
 
         if (!result.ok) {
-            reply('error', { code: result.code, message: 'That bakery cannot take you right now.' })
+            reply('error', { code: result.code, message: 'That bake sale cannot take you right now.' })
             return
         }
 

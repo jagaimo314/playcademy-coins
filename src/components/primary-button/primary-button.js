@@ -5,7 +5,7 @@ import './primary-button.css'
  * The app's main button.
  *
  * A disabled button also renders its reason. A K-2 kid cannot infer why a
- * greyed-out control is greyed out, so "Start Bakery" has to say that the
+ * greyed-out control is greyed out, so "Go to the Bake Sale" has to say that the
  * lesson comes first.
  */
 export function createPrimaryButton({

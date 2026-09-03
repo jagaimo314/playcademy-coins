@@ -4,7 +4,7 @@ import { createPrimaryButton } from '../../components/primary-button/primary-but
 import './home.css'
 
 /**
- * The menu. Three options: start the lesson, start a bakery, join a bakery.
+ * The menu. Three options: start the lesson, go to the bake sale, join a bake sale.
  */
 export function createHomeView({ store, navigate }) {
     const lessonDone = () => Boolean(store.get('lesson.completed'))
@@ -16,7 +16,7 @@ export function createHomeView({ store, navigate }) {
     })
 
     const startBakery = createPrimaryButton({
-        label: 'Start Bakery',
+        label: 'Go to the Bake Sale',
         variant: 'green',
         onClick: () => navigate('/bakery'),
     })
@@ -25,7 +25,7 @@ export function createHomeView({ store, navigate }) {
     function syncBakeryGate(completed) {
         startBakery.update({
             disabled: !completed,
-            disabledReason: completed ? null : 'Finish the Lesson first to open your own bakery.',
+            disabledReason: completed ? null : 'Finish the Lesson first to open your own bake sale.',
         })
     }
 
@@ -94,7 +94,7 @@ export function createHomeView({ store, navigate }) {
             const code = normalizeCode(codeInput.value)
 
             if (!isValidCode(code)) {
-                setJoinError(`A bakery code is ${CODE_LENGTH} letters, like ABCD.`)
+                setJoinError(`A bake sale code is ${CODE_LENGTH} letters, like ABCD.`)
                 codeInput.focus()
                 return
             }
@@ -105,7 +105,7 @@ export function createHomeView({ store, navigate }) {
         el('label', { class: 'pc-home__label', for: 'join-code' }, "Got a friend's code?"),
         el('div', { class: 'pc-home__join-row' }, [
             codeInput,
-            el('button', { type: 'submit', class: 'pc-button pc-button--gold' }, 'Join Bakery'),
+            el('button', { type: 'submit', class: 'pc-button pc-button--gold' }, 'Join the Bake Sale'),
         ]),
         joinError,
     ])
@@ -117,7 +117,7 @@ export function createHomeView({ store, navigate }) {
             el('p', { class: 'pc-home__eyebrow' }, 'Playcademy'),
             el('h1', {}, 'Coin Sums'),
             el('p', { class: 'pc-home__subtitle' },
-                'Learn to count coins, then run a bakery with your friends.'),
+                'Learn to count coins, then run a bake sale with your friends.'),
         ]),
 
         knowledgeGraph,

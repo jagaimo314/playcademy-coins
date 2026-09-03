@@ -198,6 +198,10 @@
 
     text-align: center;
     background: color-mix(in srgb, var(--pc-sky) 92%, transparent);
+
+    /* The ending sentences are long enough to reach the frame edge without
+       this, and a heading that touches the wall reads as clipped. */
+    padding: 0 var(--pc-space-7);
 }
 
 .pc-game__overlay[hidden] { display: none; }
@@ -215,4 +219,32 @@
     margin: 0;
     font-size: var(--pc-text-lg);
     font-weight: 700;
+}
+
+/*
+ * The win rating. Earned and unearned stars differ in fill *and* in stroke
+ * weight: a child with no colour vision still counts the solid shapes
+ * against the hollow ones, and the row's aria-label says the score outright.
+ */
+.pc-game__stars {
+    display: flex;
+    gap: var(--pc-space-2);
+}
+
+.pc-game__star {
+    width: 64px;
+    height: 64px;
+}
+
+.pc-game__star polygon {
+    fill: none;
+    stroke: var(--pc-ink);
+    stroke-width: 5;
+    stroke-linejoin: round;
+}
+
+.pc-game__star.is-earned polygon {
+    fill: var(--pc-gold);
+    stroke: var(--pc-gold-deep);
+    stroke-width: 8;
 }

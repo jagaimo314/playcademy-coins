@@ -1,4 +1,5 @@
-import { animationSettled, clear, el, prefersReducedMotion } from '../../../lib/dom.js'
+import { animationSettled, append, clear, el, prefersReducedMotion, svg } from '../../../lib/dom.js'
+import { starPoints } from '../../../lib/geometry.js'
 import { goodFor } from '../../../lib/goods.js'
 import { createBakeryCounter } from '../../../components/bakery-counter/bakery-counter.js'
 import { createConveyorBelt, HOP_MS, trayWidthFor } from '../../../components/conveyor-belt/conveyor-belt.js'
@@ -555,11 +556,14 @@ export function createBakeryGame({ playerId, config, game, onClaim }) {
         overlay.hidden = false
         overlay.classList.toggle('is-win', won)
 
-        overlay.append(
-            el('h2', {}, won ? 'The bakery is happy!' : 'The bakery ran out of patience.'),
-            el('p', {}, `You served ${payload.results.served} of ${payload.results.target}.`),
-            mine ? el('p', {}, `You alone served ${mine.score}.`) : null,
-        )
+        append(overlay, [
+            el('h2', {}, won
+                ? 'Congratulations! Enjoy your bakery items.'
+                : 'You and your friends wasted too much food and were asked to leave the bake sale.'),
+            won ? createStarRating(starsFor(payload.results)) : null,
+            el('p', {}, `You purchased ${payload.results.served} of ${payload.results.target}.`),
+            mine ? el('p', {}, `You alone purchased ${mine.score}.`) : null,
+        ])
     }
 
     /* ------------------------------------------------------------------ init */
@@ -595,4 +599,52 @@ export function createBakeryGame({ playerId, config, game, onClaim }) {
             root.remove()
         },
     }
+}
+
+/* --------------------------------------------------------------- the rating */
+
+/** Filled out of this many. Three is what a K-2 kid already reads as a score. */
+const STAR_TOTAL = 3
+
+/**
+ * A win's star rating, read off the shared waste budget.
+ *
+ * Waste is the only thing a *winning* team can still have done badly — the
+ * target was hit either way, so serving is not what separates a good run from
+ * a scraped one. A team that reached the target having filled three quarters
+ * of the incinerator got there by grabbing at everything; one that barely
+ * touched it counted before it grabbed, which is the whole exercise.
+ */
+function starsFor({ wasted, wasteLimit }) {
+    const spoiled = wasteLimit > 0 ? wasted / wasteLimit : 0
+
+    if (spoiled >= 0.75) return 1
+    if (spoiled >= 0.25) return 2
+    return STAR_TOTAL
+}
+
+/**
+ * The rating, as `count` filled stars followed by empty ones.
+ *
+ * Earned and unearned differ in fill *and* in outline weight, never in colour
+ * alone, and the row is one `role="img"` carrying the whole result in words —
+ * three gold shapes in a line say nothing to a child who cannot see them, and
+ * "2 out of 3 stars" is the entire outcome in four.
+ */
+function createStarRating(count, total = STAR_TOTAL) {
+    const stars = []
+
+    for (let i = 0; i < total; i += 1) {
+        stars.push(svg('svg', {
+            class: ['pc-game__star', i < count ? 'is-earned' : null],
+            viewBox: '-52 -52 104 104',
+            'aria-hidden': 'true',
+        }, svg('polygon', { points: starPoints(48) })))
+    }
+
+    return el('div', {
+        class: 'pc-game__stars',
+        role: 'img',
+        'aria-label': `${count} out of ${total} stars`,
+    }, stars)
 }

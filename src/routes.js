@@ -18,7 +18,7 @@ export const routes = [
     },
     {
         path: '/bakery',
-        title: 'Bakery \u00b7 Playcademy',
+        title: 'Bake Sale \u00b7 Playcademy',
         view: createBakeryView,
         // Hosting a bakery is gated on finishing the lesson. Joining someone
         // else's bakery by code is not — an invited kid can always accept.

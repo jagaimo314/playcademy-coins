@@ -66,7 +66,7 @@ export function createFakeRoomAdapter({ joinDelayMs = 1200 } = {}) {
             if (!isValidCode(normalized)) {
                 status = 'closed'
                 return Promise.reject(
-                    Object.assign(new Error('That bakery code is not right.'), { code: 'ROOM_NOT_FOUND' }),
+                    Object.assign(new Error('That bake sale code is not right.'), { code: 'ROOM_NOT_FOUND' }),
                 )
             }
 
