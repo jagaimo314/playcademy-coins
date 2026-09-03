@@ -57,7 +57,7 @@ student has an answer marked right:
 | --- | --- |
 | `lesson.content.js` | Problems and narration, as data. No DOM. |
 | `lesson.view.js` | Layout, the mode machine, and what each beat *does*. |
-| `diagnostics.js` | Wrong-answer classification and the report. **Written and tested by hand, not yet wired into the view.** |
+| `diagnostics.js` | Wrong-answer classification and the report. `classify()` is wired — `check()` calls it and the student reads the diagnosis. `buildReport()` is **not**: nothing records the attempts yet. |
 | `lesson.css` | The frame and everything positioned against it. |
 
 ### Copy lives in content, behaviour lives in the view
@@ -127,6 +127,16 @@ both start `GRID_INSET` lower, so the chart keeps the same 15 from the frame abo
 does to the right and below. Putting the panel on `CONTENT_TOP` instead would paint that gap
 in the border's colour and give the frame a 16px top edge against a 1px hairline everywhere
 else.
+
+**The work column is the tightest part of that budget, and a wrong answer is what tightens
+it.** Fifteen nickels is three rows of coins, and under them go the question, the field, the
+button, the diagnosis and the Retry that clears it — 491 design pixels for all of it. That
+is why `lesson.css` trims the label's line-height, the field's padding and the row gap, and
+why the diagnosis lines in `lesson.content.js` have a **length budget: about 110 characters,
+which is two lines at the hint's 34rem**. Three lines overflows the panel on `p9`. If a new
+diagnosis needs more words, find the pixels first — do not let the message run off the frame,
+which is what the old 15-number "count along" tail was quietly doing before the diagnosis
+replaced it.
 
 Load-bearing, all of it:
 

@@ -205,10 +205,12 @@ export function decoyPrice(cursor, hand, value) {
     }
 
     // Right step, one term too many or too few — so ± the value of a coin that
-    // is actually in the hand, not a fixed ±1.
+    // is actually in the hand, not a fixed ±1. That is the mixed-hand form of
+    // a miscount; on the lesson's like-denomination pile the same error type
+    // covers any wrong number of jumps, which a mixed hand has no notion of.
     for (const id of new Set(hand)) {
-        offer(value + valueOf(id), ERROR_TYPES.OFF_BY_ONE_COIN)
-        offer(value - valueOf(id), ERROR_TYPES.OFF_BY_ONE_COIN)
+        offer(value + valueOf(id), ERROR_TYPES.MISCOUNTED_COINS)
+        offer(value - valueOf(id), ERROR_TYPES.MISCOUNTED_COINS)
     }
 
     // Answered the number of coins instead of what they are worth.
@@ -250,7 +252,7 @@ export function classifyGrab(price, hand, value) {
 
     for (const id of new Set(hand)) {
         if (price === value + valueOf(id) || price === value - valueOf(id)) {
-            return ERROR_TYPES.OFF_BY_ONE_COIN
+            return ERROR_TYPES.MISCOUNTED_COINS
         }
     }
 

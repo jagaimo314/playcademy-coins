@@ -93,7 +93,7 @@ describe('decoys', () => {
             if (decoy) seen.add(decoy.errorType)
         }
 
-        assert.ok(seen.has(ERROR_TYPES.OFF_BY_ONE_COIN))
+        assert.ok(seen.has(ERROR_TYPES.MISCOUNTED_COINS))
         assert.ok(seen.has(ERROR_TYPES.WRONG_DENOMINATION_VALUE))
     })
 })
@@ -107,8 +107,8 @@ describe('classifying a wrong grab', () => {
 
     it('names one coin too many or too few', () => {
         const hand = ['nickel', 'nickel', 'nickel', 'nickel']
-        assert.equal(classifyGrab(15, hand, 20), ERROR_TYPES.OFF_BY_ONE_COIN)
-        assert.equal(classifyGrab(25, hand, 20), ERROR_TYPES.OFF_BY_ONE_COIN)
+        assert.equal(classifyGrab(15, hand, 20), ERROR_TYPES.MISCOUNTED_COINS)
+        assert.equal(classifyGrab(25, hand, 20), ERROR_TYPES.MISCOUNTED_COINS)
     })
 
     it('names skip-counting the whole pile with the wrong step', () => {

@@ -129,6 +129,12 @@
 /*
  * Everything the student touches, in the space the chart leaves: the pile, the
  * question, the field, the button — one centred column, top to bottom.
+ *
+ * It is the tightest thing in the design vertically, and the pile is what makes
+ * it tight: fifteen coins is three rows of a chart cell's worth, which leaves
+ * the question, the field, the button, a wrong answer's diagnosis and the way
+ * to try that answer again to share what is left down to the panel's edge.
+ * Hence the gap here rather than `--pc-space-6`, and the trims below it.
  */
 .pc-lesson__work {
     position: absolute;
@@ -140,7 +146,7 @@
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: var(--pc-space-6);
+    gap: var(--pc-space-4);
 }
 
 /* Holder only — the pile component brings its own rows-of-five layout. */
@@ -148,19 +154,48 @@
 
 .pc-lesson__work .pc-answer { align-items: center; }
 
-/* The question reads as the lesson's voice, not as a form label. */
+/*
+ * The question reads as the lesson's voice, not as a form label. Its
+ * line-height is pulled in because it is always one short line here, and the
+ * body's 1.65 spends 16 design pixels on the space above and below it —
+ * pixels the column needs further down.
+ */
 .pc-lesson__work .pc-answer__label {
     font-size: var(--pc-text-xl);
     font-weight: 800;
+    line-height: 1.15;
 }
 
 /* Wide enough for three digits and the unit, narrow enough to read as a blank. */
 .pc-lesson__work .pc-answer__field { flex: 0 0 auto; width: 11rem; }
 
-.pc-lesson__work .pc-answer__row { align-items: center; }
+/*
+ * The box is the tap target and `--pc-tap-min` already guarantees it at 48, so
+ * the padding and the body's 1.65 line-height are height this column cannot
+ * spare — between them they put the field at 65 design pixels. Both the number
+ * and the unit beside it have to be trimmed: they sit in the same flex line, so
+ * whichever is left on 1.65 sets the height on its own.
+ */
+.pc-lesson__work .pc-answer__input,
+.pc-lesson__work .pc-answer__suffix {
+    line-height: 1.15;
+}
 
+.pc-lesson__work .pc-answer__input { padding: 0; }
+
+.pc-lesson__work .pc-answer__row {
+    align-items: center;
+    gap: var(--pc-space-2);
+}
+
+/*
+ * Wider than the component's default and wider than it looks like it needs to
+ * be: a diagnosis is two sentences, and every line it wraps to is a line the
+ * Retry button under it has to be found room for. The column is 623 design
+ * pixels; this stays inside it with the padding.
+ */
 .pc-lesson__work .pc-answer__hint {
-    max-width: 24rem;
+    max-width: 34rem;
     font-size: var(--pc-text-base);
     text-align: center;
     min-height: 1.5em;

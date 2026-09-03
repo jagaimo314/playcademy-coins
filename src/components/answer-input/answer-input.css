@@ -120,3 +120,15 @@
 
 .pc-answer.is-wrong .pc-answer__field { border-color: var(--pc-red-deep); }
 .pc-answer.is-wrong .pc-answer__hint { color: var(--pc-red-deep); }
+
+/*
+ * Secondary to Check Answer on purpose, and sitting under the message rather
+ * than beside the field: it belongs to the answer that went wrong, not to the
+ * question. Selector carries the block as well as the element because it is
+ * trimming `.pc-button`, which is exactly as specific on its own.
+ */
+.pc-answer .pc-answer__retry {
+    align-self: center;
+    padding: 0 var(--pc-space-4);
+    font-size: var(--pc-text-base);
+}

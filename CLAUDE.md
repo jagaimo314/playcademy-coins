@@ -78,13 +78,22 @@ anywhere.** Dollar bills are out of scope.
 | `docs/architecture.md` | Folder structure, routing, view/component contracts, state, styling. |
 | `docs/multiplayer-contract.md` | Room/message contract and the network adapter interface. |
 
-Two places where the code has moved past the docs:
+Three places where the code has moved past the docs:
 
 - `docs/README.md`'s status table still calls the Lesson a shell. It is now built: three
   modes, narrated instruction, guided practice, ten free-play puzzles.
 - `docs/architecture.md` says "no classes". The `Grid → SkipCountGrid →
   SkipCountCurrencyGrid` family is a deliberate exception, explained in
   `components/CLAUDE.md`. It is not a licence for new classes elsewhere.
+- **`LEARNING.pdf`'s Remediation table has been superseded on one mistake.** It calls the
+  third one `off-by-one-coin`, detected as `answer === expected ± step`. The code
+  generalises it: any whole number of *this* coin's steps is a miscount
+  (`MISCOUNTED_COINS`), because counting by 5s eleven times is the same broken sub-skill as
+  counting by 5s three times. That makes `wrong-denomination-value` the more specific claim
+  and it is now checked **first** — and only when the step the answer implies is a real
+  coin's value, which is what settles the doc's "Order of checks" example far better than
+  its own answer did. Two nickels answered as 20 is a dime's step taken twice, not four 5s.
+  The PDF is a build artefact and has not been regenerated.
 
 ## Constraints from the brief
 
@@ -97,7 +106,10 @@ These are requirements, not preferences:
 - **The Lesson ends in 10 problems** testing mastery.
 - **A wrong answer must be diagnosed** — what went wrong and where the student needs help.
   Detection only; remediation is out of scope. `views/lesson/diagnostics.js` does the
-  classifying and is written but **not yet wired into the view**.
+  classifying, and the Lesson says the diagnosis back to the student for the three mistakes
+  that leave a signature in the typed number, with a **Retry** under it that clears the
+  board. What is still unwired is the *report*: `buildReport()` and the per-attempt record
+  the summary screen and `lesson.report` are meant to carry.
 - **The Bakery unlocks when the Lesson is complete**, and the gate is real: the route guard
   refuses to host a room with the flag unset. Joining someone else's room by code is
   deliberately ungated - an invited kid can always accept.
