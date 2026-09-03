@@ -29,6 +29,7 @@
 
     --pc-red: #E8735F;
     --pc-red-deep: #D2543F;
+    --pc-red-ink: #B23F2C;
 
     /*
      * Coin geometry. A quarter is one unit; every other coin is a fraction of
@@ -73,4 +74,55 @@
 
     /* hit targets — K-2 hands, often on a tablet */
     --pc-tap-min: 3rem;
+}
+
+/*
+ * The Bakery.
+ *
+ * Sampled out of the supplied reference art rather than chosen, and appended
+ * rather than folded in: the Lesson and Home read the block above and none of
+ * this belongs to them. Provenance for every value is the styling guide inside
+ * docs/bake-sale-mockup.html.
+ *
+ * Two values the mockup carries that the app deliberately does not adopt:
+ * its warm ink (#201611) and its darkened coin metals. Both are shared with the
+ * Lesson, and consistency there outranks matching the art — see §5 and §7 of
+ * docs/bake-sale-ui-plan.md. The Bakery reads slightly cooler than the mockup
+ * on purpose.
+ */
+:root {
+    /* the goods — the food is warm, the machinery is cool, and one ink outlines both */
+    /*
+     * Nothing draws with these yet: the six goods are PNG cutouts (src/lib/goods.js).
+     * They are the record of what was sampled, so a later redraw as SVG has the
+     * palette to draw with rather than re-sampling a placeholder.
+     */
+    --pc-food-crust: #ECB06B;
+    --pc-food-crust-light: #F2BC8C;
+    --pc-food-pink: #F5A8BD;
+    --pc-food-pink-deep: #EC91AC;
+    --pc-food-choc: #6C4231;
+    --pc-food-choc-deep: #593529;
+    --pc-food-blue: #85BCDB;
+    --pc-food-sponge: #F6EA94;
+    --pc-food-cream: #F6F0D2;
+    --pc-food-berry: #A93246;
+
+    /* the room the food travels through */
+    --pc-backroom: #D3E3F5;      /* the wall behind the belts */
+    --pc-steel: #B9C6D6;         /* tray decks */
+    --pc-card: #FFF8EC;          /* price cards — warm white, not the app white */
+
+    /*
+     * The waste end of a duct. The mockup's swatch table calls this #7C8DA3, but
+     * the frame itself draws #3A4450 and the frame is the target — the table
+     * predates the ducts losing their ribs. The oven end takes --pc-gold-deep,
+     * which is already the mockup's glow exactly.
+     */
+    --pc-duct-deep: #3A4450;
+
+    /* the counter — the warm boundary between machinery and people */
+    --pc-counter-top: #E0A469;
+    --pc-counter-face: #CF8E58;
+    --pc-counter-deep: #A96635;
 }
