@@ -22,6 +22,18 @@ export default defineConfig({
         },
     },
     build: {
+        /*
+         * Two pages, not one. Home links out to the knowledge graph, and dev
+         * serves it straight off the filesystem — but `docs/` is not
+         * `publicDir`, so without naming it here the built app ships a link to
+         * a 404. Listing an input replaces the default, hence index.html too.
+         */
+        rollupOptions: {
+            input: {
+                app: 'index.html',
+                knowledgeGraph: 'docs/coin-sums-knowledge-graph.html',
+            },
+        },
         outDir: 'dist',
         target: 'es2022',
         sourcemap: true,

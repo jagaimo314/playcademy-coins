@@ -79,3 +79,27 @@
 }
 
 .pc-home__error[hidden] { display: none; }
+
+/* Its own row above the menu card, sized to its text rather than the column. */
+.pc-home__doc {
+    display: flex;
+    justify-content: center;
+}
+
+/*
+ * The doc link wears the button skin but is an anchor, which centres nothing
+ * and underlines everything on its own. `.pc-button` was written against
+ * <button>, so an anchor has to be told to look like one.
+ */
+.pc-home__doc-link {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    text-decoration: none;
+    font-size: var(--pc-text-base);
+    background: transparent;
+    box-shadow: none;
+}
+
+.pc-home__doc-link:hover { background: var(--pc-white); }

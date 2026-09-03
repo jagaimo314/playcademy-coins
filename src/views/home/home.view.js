@@ -32,6 +32,29 @@ export function createHomeView({ store, navigate }) {
     syncBakeryGate(lessonDone())
     const unsubscribe = store.subscribe('lesson.completed', syncBakeryGate)
 
+    // --- The knowledge graph ------------------------------------------------
+
+    /*
+     * A plain anchor, not a `createPrimaryButton`: this leaves the app instead
+     * of routing inside it, and a link is what the browser — and a screen
+     * reader — should be told it is. It opens in a new tab so a kid who taps it
+     * never loses the menu behind a doc they cannot navigate back out of.
+     *
+     * It sits outside the menu card on purpose. The card is the kid's: lesson,
+     * bakery, a friend's code. This is a doc for the grown-up in the room and
+     * belongs to neither of those, so it is kept off that surface rather than
+     * stacked in among things a kid is meant to press.
+     */
+    const knowledgeGraph = el('div', { class: 'pc-home__doc' }, el('a', {
+        class: 'pc-button pc-button--quiet pc-home__doc-link',
+        href: '/docs/coin-sums-knowledge-graph.html',
+        target: '_blank',
+        rel: 'noopener',
+    }, [
+        'Knowledge Graph',
+        el('span', { class: 'pc-visually-hidden' }, ' (opens in a new tab)'),
+    ]))
+
     // --- Join by code -------------------------------------------------------
 
     const codeInput = el('input', {
@@ -96,6 +119,8 @@ export function createHomeView({ store, navigate }) {
             el('p', { class: 'pc-home__subtitle' },
                 'Learn to count coins, then run a bakery with your friends.'),
         ]),
+
+        knowledgeGraph,
 
         el('div', { class: 'pc-home__menu pc-card pc-stack' }, [
             startLesson.el,
