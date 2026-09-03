@@ -111,6 +111,7 @@
     /* the room the food travels through */
     --pc-backroom: #D3E3F5;      /* the wall behind the belts */
     --pc-steel: #B9C6D6;         /* tray decks */
+    --pc-steel-light: #DCE5EF;   /* the lit top of a deck */
     --pc-card: #FFF8EC;          /* price cards — warm white, not the app white */
 
     /*

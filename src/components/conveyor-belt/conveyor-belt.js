@@ -1,5 +1,5 @@
 import { animationSettled, prefersReducedMotion, svg } from '../../lib/dom.js'
-import { TRAY_ASPECT } from '../conveyor-item/conveyor-item.js'
+import { TRAY_RIDE_ASPECT } from '../conveyor-item/conveyor-item.js'
 import './conveyor-belt.css'
 
 /** Stroke room, so the band's outline is not clipped by the viewBox edge. */
@@ -70,7 +70,7 @@ export function createConveyorBelt({
      * rather than a float tail — cosmetic, but these end up in the DOM.
      */
     const trayWidth = Math.round(TRAY_FIT * slotWidth)
-    const deckY = TRAY_ASPECT * trayWidth
+    const deckY = TRAY_RIDE_ASPECT * trayWidth
     const height = deckY + bandHeight
 
     let slots = new Array(slotCount).fill(null)
@@ -141,10 +141,14 @@ export function createConveyorBelt({
      * Where a tray of any width sits when centred over `index`, standing on the
      * band. A string rather than a pair because both the attribute and the hop's
      * keyframes want it in exactly this form.
+     *
+     * Measured by the tray's `rideHeight`, not its height: a tray's price card
+     * overhangs the deck, and standing it by its full bounds would sink the card
+     * onto the band and float the deck above it.
      */
     function transformFor(item, index) {
         const { x, y } = slotCenter(index)
-        return `translate(${x - item.width / 2}px, ${y - item.height}px)`
+        return `translate(${x - item.width / 2}px, ${y - item.rideHeight}px)`
     }
 
     /** Centre a tray of any width over its slot, standing on the band. */

@@ -1,0 +1,86 @@
+/* Styles for the baked goods test page only — nothing here ships. */
+
+#test {
+    max-width: 88rem;
+    margin: 0 auto;
+    padding: var(--pc-space-6) var(--pc-space-4) var(--pc-space-7);
+    display: flex;
+    flex-direction: column;
+    gap: var(--pc-space-5);
+}
+
+.pc-test-header p { color: var(--pc-ink-soft); }
+
+.pc-test-caption {
+    font-size: var(--pc-text-sm);
+    color: var(--pc-ink-soft);
+    margin: var(--pc-space-3) 0 0;
+}
+
+.pc-test-caption code {
+    background: var(--pc-sky-deep);
+    border-radius: 4px;
+    padding: 0 4px;
+}
+
+.pc-test-readout {
+    margin: 0 0 var(--pc-space-3);
+    font-family: var(--pc-font-display);
+    font-size: var(--pc-text-lg);
+    font-weight: 800;
+}
+
+/*
+ * Aligned on their bottoms rather than their tops, so the deck lines of the six
+ * trays land on one row and a good sitting wrong is visible across the set
+ * rather than one tray at a time.
+ */
+.pc-test-goods {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-end;
+    gap: var(--pc-space-5);
+}
+
+.pc-test-goods.is-zoomed {
+    gap: var(--pc-space-6);
+    /* Four times a 100-unit tray does not fit beside its neighbours. */
+    overflow-x: auto;
+    padding-bottom: var(--pc-space-3);
+}
+
+.pc-test-goods figure { margin: 0; }
+
+.pc-test-goods figcaption {
+    margin-top: var(--pc-space-2);
+    font-size: var(--pc-text-sm);
+    color: var(--pc-ink-soft);
+}
+
+.pc-test-goods figcaption i { font-style: normal; color: var(--pc-red-deep); }
+
+.pc-test-tray {
+    display: block;
+    overflow: visible;
+    background: var(--pc-backroom);
+    border-radius: var(--pc-radius-sm);
+}
+
+/* The line every good must meet. Dashed, so it reads as a guide, not as art. */
+.pc-test-deckline {
+    stroke: var(--pc-red-deep);
+    stroke-width: 1;
+    stroke-dasharray: 4 3;
+}
+
+.checks {
+    list-style: none;
+    margin: var(--pc-space-3) 0 0;
+    padding: 0;
+    font-size: var(--pc-text-sm);
+}
+
+.checks li { display: flex; gap: var(--pc-space-2); line-height: 1.5; }
+.checks .is-pass { color: var(--pc-green-ink); font-weight: 800; }
+.checks .is-fail { color: var(--pc-red-deep); font-weight: 800; }
+.checks__detail { color: var(--pc-red-deep); }

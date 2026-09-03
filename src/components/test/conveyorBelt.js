@@ -9,8 +9,9 @@ import './conveyorBelt.css'
 
 import { append, el, svg } from '../../lib/dom.js'
 import { formatCents } from '../../lib/money.js'
+import { goodFor } from '../../lib/goods.js'
 import { createConveyorBelt } from '../conveyor-belt/conveyor-belt.js'
-import { createConveyorItem, TRAY_ASPECT } from '../conveyor-item/conveyor-item.js'
+import { createConveyorItem, TRAY_FULL_ASPECT, TRAY_RIDE_ASPECT } from '../conveyor-item/conveyor-item.js'
 
 /** 10 slots at 120 units each — the 1200-unit belt the bakery layout assumes. */
 const SLOT_WIDTH = 120
@@ -46,6 +47,9 @@ function beltSection() {
         const tray = createConveyorItem({
             price,
             trayWidth: belt.trayWidth,
+            // Derived from an id, as the real view does it, so the same tray
+            // always wears the same pastry.
+            good: goodFor(`test-${price}-${spawns}`),
             onClick: () => choose(tray),
         })
 
@@ -140,21 +144,23 @@ function beltSection() {
  * ------------------------------------------------------------------------- */
 function traySection() {
     const samples = [
-        { price: 5, trayWidth: 80 },
-        { price: 25, trayWidth: 120 },
-        { price: 42, trayWidth: 160 },
-        { price: 99, trayWidth: 200 },
+        { price: 5, trayWidth: 80, good: 'macaron' },
+        { price: 25, trayWidth: 120, good: 'cupcake' },
+        { price: 42, trayWidth: 160, good: 'tart' },
+        { price: 99, trayWidth: 200, good: 'pie' },
     ]
 
     return el('section', { class: 'pc-card pc-stack' }, [
         el('h2', {}, 'Trays'),
-        el('div', { class: 'pc-test-trays' }, samples.map(({ price, trayWidth }) => el('figure', {}, [
-            svgFrame(createConveyorItem({ price, trayWidth })),
+        el('div', { class: 'pc-test-trays' }, samples.map(({ price, trayWidth, good }) => el('figure', {}, [
+            svgFrame(createConveyorItem({ price, trayWidth, good })),
             el('figcaption', {}, `${formatCents(price)} at trayWidth ${trayWidth}`),
         ]))),
         el('p', { class: 'pc-test-caption' }, [
-            'The goods are a placeholder square, coloured from the price, so decoys are ',
-            'distinguishable from each other before there is any bakery art.',
+            'One number — ',
+            el('code', {}, 'trayWidth'),
+            ' — scales the whole tray. The good is fitted to its box and stood on the ',
+            'deck, so a macaron and a pie both rest on the board rather than in it.',
         ]),
     ])
 }
@@ -234,15 +240,15 @@ function runChecks() {
     })
 
     check('the belt reserves a tray plus the band', () => {
-        const band = belt.height - TRAY_ASPECT * belt.trayWidth
+        const band = belt.height - TRAY_RIDE_ASPECT * belt.trayWidth
         if (!(band > 0)) return `band depth ${band}`
     })
 
     check('an empty belt reports no trays', () =>
         expect(belt.el.getAttribute('aria-label'), 'Conveyor belt, 10 slots, 0 trays', 'label'))
 
-    check('tray height follows TRAY_ASPECT', () =>
-        expect(tray.height, TRAY_ASPECT * belt.trayWidth, 'height'))
+    check('tray height follows TRAY_FULL_ASPECT', () =>
+        expect(tray.height, TRAY_FULL_ASPECT * belt.trayWidth, 'height'))
 
     check('a price must be whole cents', () => {
         if (!threw(() => createConveyorItem({ price: 12.5 }))) return 'no throw on 12.5'
@@ -256,7 +262,7 @@ function runChecks() {
         // CSS property, so that is where a tray's position now lives.
         const { x, y } = belt.slotCenter(2)
         return expect(tray.el.style.transform,
-            `translate(${x - tray.width / 2}px, ${y - tray.height}px)`, 'transform')
+            `translate(${x - tray.width / 2}px, ${y - tray.rideHeight}px)`, 'transform')
     })
 
     check('itemAt finds the tray, and nothing in an empty slot', () => {

@@ -295,7 +295,7 @@ export function createBakeryGame({ playerId, config, game, onClaim }) {
 
         return {
             left: BELT_X + x - tray.width / 2,
-            top: beltTop + y - tray.height,
+            top: beltTop + y - tray.rideHeight,
         }
     }
 
