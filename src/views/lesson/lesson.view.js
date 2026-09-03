@@ -1,17 +1,19 @@
 import { el } from '../../lib/dom.js'
-import { CENT, describeCount, formatCents, skipCountSequence } from '../../lib/money.js'
+import { CENT, describeCount, formatCents } from '../../lib/money.js'
 import { createAnswerInput } from '../../components/answer-input/answer-input.js'
 import { createCoinPile } from '../../components/coin-pile/coin-pile.js'
 import { createNarrator } from '../../components/narrator/narrator.js'
 import { createProgressBar } from '../../components/progress-bar/progress-bar.js'
 import { SkipCountCurrencyGrid } from '../../components/SkipCountCurrencyGrid.js'
 import {
+    explainWrongAnswer,
     FREEPLAY_PROBLEMS,
     GUIDED_PROBLEM,
     GUIDED_SCRIPT,
     INSTRUCTION_PROBLEM,
     INSTRUCTION_SCRIPT,
 } from './lesson.content.js'
+import { classify } from './diagnostics.js'
 import './lesson.css'
 
 /**
@@ -229,20 +231,26 @@ export function createLessonView({ store, navigate, params }) {
         suffix: CENT,
         submitLabel: 'Check Answer',
         variant: 'stacked',
-        onSubmit: async ({ cents }) => {
-            if (!await check(cents)) return
+        onSubmit: async ({ cents, raw }) => {
+            if (!await check(cents, raw)) return
 
             const opened = answerGate
             answerGate = null
             opened?.settle()
         },
+
+        // A wrong answer leaves a red star on the chart, a run of landed coins
+        // under it and a number in the box. Retry takes all three away — the
+        // student's second go starts from the same blank board their first one
+        // did, rather than from the wreckage of it.
+        onRetry: () => resetPuzzle(),
     })
 
     /**
      * Stake the answer on the chart, run the count, then judge it. Resolves
      * true only when the answer was right, which is what every mode gates on.
      */
-    async function check(cents) {
+    async function check(cents, raw) {
         if (checking) return false
 
         checking = true
@@ -266,20 +274,26 @@ export function createLessonView({ store, navigate, params }) {
             return false
         }
 
-        const isCorrect = cents === problem.expected
+        // The diagnosis is the brief's requirement, not a nicety: a wrong
+        // answer has to say *what* went wrong. Three mistakes leave a signature
+        // in the number itself, and `explainWrongAnswer` turns the one that fits
+        // into the sentence the student reads. The rest get a plain "not quite",
+        // because a bare number cannot tell a broken count from a mistype and
+        // guessing between them out loud would be a lie about the student.
+        const result = classify({ answer: cents, raw, problem })
+        const { correct: isCorrect } = result
+
         if (placed) grid.setAnswerStatus(isCorrect ? 'correct' : 'wrong')
 
         if (isCorrect) {
             answer.setStatus('correct',
                 `Yes! ${describeCount(problem.count, problem.denomination)} is ${formatCents(problem.expected)}.`)
         } else {
-            const said = skipCountSequence(problem.denomination, problem.count).join(', ')
-
             // An off-chart answer has no red star to explain itself, so the
-            // message has to carry that on its own.
-            answer.setStatus('wrong', placed
-                ? `Not quite. Count along with the coins: ${said}.`
-                : `${formatCents(cents)} is off the chart. Count along with the coins: ${said}.`)
+            // message has to say so before it says anything else.
+            const offChart = placed ? '' : `${formatCents(cents)} is off the chart. `
+
+            answer.setStatus('wrong', offChart + explainWrongAnswer(result, problem))
         }
 
         checking = false
@@ -296,6 +310,32 @@ export function createLessonView({ store, navigate, params }) {
         await delay(CELEBRATE_MS)
 
         return !cancelled
+    }
+
+    /**
+     * Clear the current problem back to a blank board: no star on the chart, no
+     * coins landed on it, nothing marked on the pile, an empty box.
+     *
+     * Deliberately *not* a reload of the problem. The pile and the chart are
+     * the same two objects — rebuilding them would throw away a guided pile the
+     * student has been tapping, and re-running the script is not what a second
+     * go at the same puzzle means. And it must not settle the answer gate: the
+     * mode is parked on a gate only a right answer opens, so clearing the board
+     * leaves the flow exactly where it was, waiting.
+     */
+    function resetPuzzle() {
+        // The button is disabled while a count runs, so this is belt and
+        // braces — but a reset landing mid-count would clear a chart the
+        // animation is still writing to.
+        if (checking) return
+
+        grid.clearAnswer()
+        grid.resetSkipCount()
+        pile.reset()
+
+        answer.clear()
+        answer.update({ disabled: false })
+        answer.focus()
     }
 
     /**

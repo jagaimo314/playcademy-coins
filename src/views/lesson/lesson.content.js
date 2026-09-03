@@ -12,7 +12,15 @@
  *   freeplay    — the student completes `FREEPLAY_PROBLEMS` alone
  */
 
-import { coin, describeCount, valueOf } from '../../lib/money.js'
+import {
+    coin,
+    coinByValue,
+    describeCount,
+    formatCents,
+    skipCountSequence,
+    valueOf,
+} from '../../lib/money.js'
+import { ERROR_TYPES } from './diagnostics.js'
 
 export const LESSON_ID = 'skip-count-like-denomination'
 
@@ -146,3 +154,89 @@ export const GUIDED_SCRIPT = [
         say: () => 'Remember to Check Answer when you are done.',
     },
 ]
+
+/* --------------------------------------------------------------- diagnosis */
+
+/*
+ * What a wrong answer is told, for the three mistakes that leave a signature a
+ * typed number can be read for. Each line names what the student appears to
+ * have done and then the one fact that would have fixed it — it is a diagnosis
+ * spoken back to a six-year-old, so it says what happened and never that they
+ * are wrong.
+ *
+ * Unlike the narration these lines are read and not spoken, so they use `5¢`
+ * rather than "5 cents" — the same notation as the chart they are about.
+ *
+ * The fourth bucket has no entry on purpose. A broken count and a number lost
+ * on the way to the keyboard look identical in the digits, and guessing between
+ * them out loud would tell the student something untrue about themselves.
+ */
+const MISTAKE_COPY = Object.freeze({
+    [ERROR_TYPES.COUNTED_COINS_NOT_VALUE]: ({ problem }) =>
+        'That is how many coins there are, not what they are worth. '
+        + `One ${singular(problem)} is worth ${formatCents(problem.step)}.`,
+
+    // The implied step is always a real coin here — that is what separates this
+    // mistake from a miscount — so it can be named, which is the whole point:
+    // the method was right and the coin it was applied to was not.
+    [ERROR_TYPES.WRONG_DENOMINATION_VALUE]: ({ problem, impliedStep }) =>
+        `You counted by ${impliedStep}s — that is what a ${coinByValue(impliedStep).label} `
+        + `is worth. One ${singular(problem)} is worth ${formatCents(problem.step)}.`,
+
+    [ERROR_TYPES.MISCOUNTED_COINS]: ({ problem, impliedCount }) => impliedCount === 0
+        ? `You did not count by ${problem.step}s at all. `
+            + `There ${theseCoins(problem)} to count.`
+        : `You counted by ${problem.step}s ${times(impliedCount)}, `
+            + `but there ${theseCoins(problem)}.`,
+})
+
+/** `1` -> "once", `2` -> "twice", `7` -> "7 times". */
+function times(n) {
+    if (n === 1) return 'once'
+    if (n === 2) return 'twice'
+    return `${n} times`
+}
+
+/** "are 5 nickels", "is only 1 quarter" — the verb has to agree with the pile. */
+function theseCoins({ count, denomination }) {
+    const described = describeCount(count, denomination)
+    return count === 1 ? `is only ${described}` : `are ${described}`
+}
+
+/**
+ * How many terms of the count a message is willing to print. Fifteen numbers in
+ * a row is not something a six-year-old reads, and a list that runs to the end
+ * hands over the answer to a problem they are about to try again.
+ */
+const TAIL_TERMS = 4
+
+/** "Count along with the coins: 5, 10, 15, 20, and keep counting by 5s." */
+function countAlong({ denomination, count, step }) {
+    const said = skipCountSequence(denomination, count)
+    const shown = said.slice(0, TAIL_TERMS).join(', ')
+
+    return said.length > TAIL_TERMS
+        ? `Count along with the coins: ${shown}, and keep counting by ${step}s.`
+        : `Count along with the coins: ${shown}.`
+}
+
+/**
+ * What a wrong answer is told.
+ *
+ * Where the number carries a signature, that diagnosis is the whole message: it
+ * already says what the student did and the one fact that undoes it, and adding
+ * the count underneath would bury it. Where it does not, there is nothing true
+ * to say about the mistake, so the message falls back to the count itself —
+ * which is all we have when we cannot say what happened.
+ *
+ * Takes a whole `classify()` result rather than an error type, because two of
+ * the three diagnoses need what the classifier worked out on the way: which
+ * step the answer implies, and how many of them.
+ */
+export function explainWrongAnswer(result, problem) {
+    const line = MISTAKE_COPY[result.errorType]
+
+    return line
+        ? line({ ...result, problem })
+        : `Not quite. ${countAlong(problem)}`
+}

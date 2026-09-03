@@ -23,6 +23,13 @@ export function createAnswerInput({
     /** `'row'` sits the button beside the field; `'stacked'` puts it below. */
     variant = 'row',
     onSubmit,
+    /**
+     * Given, a way to start the question over appears under a wrong answer and
+     * nowhere else — the board it left behind is the caller's to clear, which is
+     * why this is a callback and not something this component can do alone.
+     */
+    onRetry = null,
+    retryLabel = 'Retry',
 }) {
     const id = `answer-${Math.random().toString(36).slice(2, 9)}`
 
@@ -60,6 +67,21 @@ export function createAnswerInput({
         class: 'pc-answer__submit',
     }, submitLabel)
 
+    /*
+     * Outside the hint rather than inside it: the hint is a live region, and a
+     * button parked in one gets its label read out as part of the status every
+     * time the status changes.
+     *
+     * `type="button"` because it lives in a form and the default is submit —
+     * a Retry that checked the answer it was clearing would be a trap.
+     */
+    const retry = onRetry === null ? null : el('button', {
+        type: 'button',
+        class: ['pc-button', 'pc-button--quiet', 'pc-answer__retry'],
+        hidden: true,
+        onClick: () => onRetry(),
+    }, retryLabel)
+
     const form = el('form', {
         class: ['pc-answer', `pc-answer--${variant}`],
         novalidate: true,
@@ -81,6 +103,7 @@ export function createAnswerInput({
         labelEl,
         el('div', { class: 'pc-answer__row' }, [field, submit]),
         hint,
+        retry,
     ])
 
     /** `status` is one of 'correct' | 'wrong' | 'hint' | null. */
@@ -90,6 +113,9 @@ export function createAnswerInput({
 
         hint.textContent = message
         hint.hidden = !message
+
+        // Only a wrong answer has anything to start over from.
+        if (retry) retry.hidden = status !== 'wrong'
     }
 
     return {
@@ -102,6 +128,11 @@ export function createAnswerInput({
             if (next.disabled !== undefined) {
                 input.disabled = next.disabled
                 submit.disabled = next.disabled
+
+                // Retry follows the field: while an answer is being checked the
+                // message on screen is still the *previous* one, and its button
+                // must not reset a puzzle mid-count.
+                if (retry) retry.disabled = next.disabled
             }
         },
 

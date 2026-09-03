@@ -16,6 +16,7 @@ export const COINS = Object.freeze([
 ])
 
 const BY_ID = new Map(COINS.map(coin => [coin.id, coin]))
+const BY_VALUE = new Map(COINS.map(coin => [coin.value, coin]))
 
 /** Look up a coin by id. Throws on an unknown id — this is a programming error. */
 export function coin(id) {
@@ -27,6 +28,16 @@ export function coin(id) {
 /** Face value of a coin, in cents. */
 export function valueOf(id) {
     return coin(id).value
+}
+
+/**
+ * The coin worth exactly this many cents, or `null` if none is. The inverse
+ * of `valueOf`, and unlike it a *question* rather than a lookup: the diagnostics
+ * ask it of a number the student produced, so "no coin is worth that" is an
+ * answer and not a programming error.
+ */
+export function coinByValue(cents) {
+    return BY_VALUE.get(cents) ?? null
 }
 
 /** Total value of a list of coin ids, in cents. */
