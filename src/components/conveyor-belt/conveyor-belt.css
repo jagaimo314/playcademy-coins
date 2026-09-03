@@ -3,26 +3,38 @@
     max-width: 100%;
     height: auto;
     font-family: var(--pc-font-display);
+    /* The drawing runs a slot past each end of the run; the frame clips it. */
+    overflow: visible;
 }
 
 .pc-belt__band {
     fill: var(--pc-ink-soft);
     stroke: var(--pc-ink);
     stroke-width: 2.5;
+    /*
+     * The band casts onto the wall behind it, which is what puts the belt in a
+     * room rather than pasting it onto one. Hard-edged, like every other shadow
+     * in the app — no blur anywhere in this art direction.
+     */
+    filter: drop-shadow(0 7px 0 color-mix(in srgb, var(--pc-ink) 10%, transparent));
 }
 
-/* Slot boundaries, cut into the band. Light enough to sit under the trays. */
+/*
+ * Slot boundaries, cut into the band. Light enough to sit under the trays, and
+ * full depth so they read as seams in the belt rather than as tick marks on it.
+ */
 .pc-belt__divider {
     stroke: var(--pc-sky);
-    stroke-width: 2.5;
-    stroke-linecap: round;
+    stroke-width: 3;
     opacity: 0.45;
 }
 
-.pc-belt__pulley {
-    fill: var(--pc-sky-deep);
-    stroke: var(--pc-ink);
+/* Which way the belt runs. Nothing else on it says so. */
+.pc-belt__arrow {
+    fill: none;
+    stroke: var(--pc-sky);
     stroke-width: 2.5;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+    opacity: 0.5;
 }
-
-.pc-belt__hub { fill: var(--pc-ink); }

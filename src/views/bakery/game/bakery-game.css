@@ -91,10 +91,18 @@
 /* Trays are the interactive part; the layer around them must not swallow taps. */
 .pc-game__belts .pc-tray { pointer-events: auto; }
 
+/*
+ * `--pc-belt-x` / `--pc-belt-y` are where the *run* starts — slot 0's top-left
+ * corner. The belt draws a slot of overscan beyond each end of that run, plus
+ * stroke room, and publishes how far its own origin sits outside the run so
+ * this rule can subtract it. The view keeps talking about the run and never
+ * learns the overscan exists; making it do this subtraction is the version of
+ * the arrangement that drifts.
+ */
 .pc-game__belt {
     position: absolute;
-    left: var(--pc-belt-x);
-    top: var(--pc-belt-y);
+    left: calc(var(--pc-belt-x) - var(--pc-belt-origin-x, 0px));
+    top: calc(var(--pc-belt-y) - var(--pc-belt-origin-y, 0px));
 }
 
 /*

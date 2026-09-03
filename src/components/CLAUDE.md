@@ -18,7 +18,7 @@ components report back through callbacks passed in (`onClick`, `onSubmit`, `onRe
 | [`coin/`](coin/CLAUDE.md) | One coin. The most reused thing in the app — **read its own CLAUDE.md before touching it or anything that draws coins.** |
 | `coin-pile/` | Rows of one denomination, plus the gestures the Lesson teaches with: a boundary round the pile, a boundary round one coin, flipping the pile to its value side and back. |
 | `conveyor-belt/` | The Bakery's belt: a band and an ordered row of slots, each holding at most one tray. It maps a slot index into geometry and plays the hop between two of them — the server owns the occupancy. |
-| `conveyor-item/` | One tray on a belt: a graphic of baked goods over the price printed at its base. The goods are a placeholder square until there is real bakery art. |
+| `conveyor-item/` | One tray on a belt: a baked good standing on a deck, with its price on a card affixed to the front. The good is the app's only raster art — `lib/goods.js` says why, and confines the exception to itself. |
 | `player-wallet/` | One Bakery player's hand: a colour-coded box with their name on a tab. Fixed width and height, coins scaled together to fit — see below. |
 | `answer-input/` | The typed-answer field. The brief forbids multiple choice, so this is how every answer is given. |
 | `narrator/` | Web Speech API wrapper. Always renders the spoken text as a caption too. |
@@ -52,9 +52,14 @@ Two things fall out of that, both learned the hard way:
 - **A tray's position lives in `style.transform`, not the `transform` attribute.** The hop
   animates the CSS property, which outranks the presentation attribute — keeping both would
   mean the tray snapped back to the attribute's value the moment a hop finished.
-- **A newly baked tray fades in where it stands.** Sliding it in from beyond slot 0 reads
-  better in the abstract and is hard-clipped in practice: the belt is an `<svg>` with a
-  viewBox, and anything starting outside it grows out of the left edge as a bar.
+- **A newly baked tray rides in from off-stage, and the overscan is what lets it.** The
+  belt is an `<svg>` with a viewBox, so anything drawn outside that box is hard-clipped by
+  it — which is why the slide, tried once without the overscan, read as a bar growing out
+  of the left edge, and why a fresh bake had to fade in where it stood instead. The belt
+  now draws a whole slot beyond each end of its run and that overscan hangs off the frame,
+  so there is an off-stage to come from and the opacity ramp that keeps the tray's first
+  frame honest is spent where nobody can see it. `entryCenter()` names that place;
+  `slotCenter()` still refuses any index that is not a slot.
 
 ## Two shapes, and when to use which
 
@@ -170,9 +175,13 @@ Open the manual test pages with `npm run dev` (they are not routes; nothing impo
   must report 0 failures. Any change to grid geometry or cell numbering goes through here.
 - `/src/components/test/coins.html` — every denomination on every face, plus a live flip.
 - `/src/components/test/conveyorBelt.html` — a 1200-unit belt of 10 slots carrying trays, the
-  tray at four widths, and **19 self-checks that must report 0 failures**. Advancing a slot and
+  tray at four widths, and **23 self-checks that must report 0 failures**. Advancing a slot and
   grabbing a tray are wired up, so slot geometry and the detach-versus-destroy seam both get
   exercised by hand.
+- `/src/components/test/goods.html` — every good on its tray at 1:1 and at 4×, a belt of
+  eight at the bakery's own pitch, and **10 self-checks that must report 0 failures**. The
+  4× row draws a rule across the deck surface: this is the cheap place to find out that a
+  good does not stand on its deck.
 - `/src/components/test/playerWallet.html` — four hands along the base of a 1200×800 frame,
   with width and height on sliders. Drag them: no coin may leave its box, and a quarter must
   stay bigger than a dime at every size.

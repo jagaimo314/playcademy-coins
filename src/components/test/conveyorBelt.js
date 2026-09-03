@@ -95,10 +95,13 @@ function beltSection() {
         const current = belt.slotItems
         const leaving = current[SLOT_COUNT - 1]
 
+        // Animated, because the hop is the thing worth looking at here: a tray
+        // that was not on the belt a moment ago has to ride in from off-stage
+        // rather than appear in slot 0, and that is only visible on a beat.
         belt.setSlotItems([
             makeTray(PRICE_POOL[spawns++ % PRICE_POOL.length]),
             ...current.slice(0, -1),
-        ])
+        ], { animate: true })
 
         if (leaving) {
             if (leaving === chosen) chosen = null
@@ -237,6 +240,32 @@ function runChecks() {
     check('a slot outside the belt throws', () => {
         if (!threw(() => belt.slotCenter(SLOT_COUNT))) return 'no throw on slot 10'
         if (!threw(() => belt.slotCenter(-1))) return 'no throw on slot -1'
+    })
+
+    // Off-stage is reachable by name, and only by name. `bakery-game.js`
+    // positions a flight from `slotCenter()`, so it has to keep refusing an
+    // index that is not a slot rather than quietly answering with the overscan.
+    check('entry sits off-stage before slot 0, exit after the last', () => {
+        if (!(belt.entryCenter().x < 0)) return `entry at ${belt.entryCenter().x}`
+        if (!(belt.exitCenter().x > belt.width)) return `exit at ${belt.exitCenter().x}`
+    })
+
+    check('off-stage is level with the belt surface', () => {
+        if (belt.entryCenter().y !== belt.slotCenter(0).y) return 'entry is off the band'
+        if (belt.exitCenter().y !== belt.slotCenter(0).y) return 'exit is off the band'
+    })
+
+    check('the drawing overruns the run at both ends', () => {
+        const [minX, , boxWidth] = belt.el.getAttribute('viewBox').split(' ').map(Number)
+        if (!(minX < 0)) return `viewBox starts at ${minX}`
+        if (!(minX + boxWidth > belt.width)) return `viewBox ends at ${minX + boxWidth}`
+    })
+
+    check('the band runs past both ends of the run', () => {
+        const band = belt.el.querySelector('.pc-belt__band')
+        const x = Number(band.getAttribute('x'))
+        if (!(x < 0)) return `band starts at ${x}`
+        if (!(x + Number(band.getAttribute('width')) > belt.width)) return 'band stops inside the run'
     })
 
     check('the belt reserves a tray plus the band', () => {
