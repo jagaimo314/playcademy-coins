@@ -23,6 +23,8 @@ components report back through callbacks passed in (`onClick`, `onSubmit`, `onRe
 | `answer-input/` | The typed-answer field. The brief forbids multiple choice, so this is how every answer is given. |
 | `narrator/` | Web Speech API wrapper. Always renders the spoken text as a caption too. |
 | `primary-button/` | The app's main button. A disabled one renders its reason. |
+| `duct/` | The opening a belt runs through. A cut in the wall, not an object on it — mounted *above* the belts, which is the whole job: it is what makes a belt run through the wall rather than stop at it. |
+| `bakery-counter/` | The horizon of the Bakery: cool machinery above it, a player's own panel below. Scenery, and the only thing tying the warm half of the picture to the cool half. |
 | `progress-bar/` | Position through a set of steps. Shows position, not score, on purpose. |
 | `Grid.js` | Plain SVG grid: lines, plus cell ↔ row/col maths in any reading `direction`. |
 | `SkipCountGrid.js` | `Grid` + cell labels, interval indicators, the reveal animation, cell highlights, and the student's answer star. |
@@ -178,10 +180,13 @@ Open the manual test pages with `npm run dev` (they are not routes; nothing impo
   tray at four widths, and **23 self-checks that must report 0 failures**. Advancing a slot and
   grabbing a tray are wired up, so slot geometry and the detach-versus-destroy seam both get
   exercised by hand.
-- `/src/components/test/goods.html` — every good on its tray at 1:1 and at 4×, a belt of
-  eight at the bakery's own pitch, and **10 self-checks that must report 0 failures**. The
-  4× row draws a rule across the deck surface: this is the cheap place to find out that a
-  good does not stand on its deck.
+- `/src/components/test/goods.html` — every good on its tray at 1:1 and at 4×, then a lane
+  of the real frame: a belt of eight running duct to duct above the counter. **17
+  self-checks that must report 0 failures.** The 4× row draws a rule across the deck
+  surface, which is the cheap place to find out that a good does not stand on its deck; the
+  framed lane is where you check that the belt runs *through* a duct rather than stopping
+  at one. Its checks run in a second `append` pass, after the page is in the document —
+  they measure where things landed, and nothing has a position before that.
 - `/src/components/test/playerWallet.html` — four hands along the base of a 1200×800 frame,
   with width and height on sliders. Drag them: no coin may leave its box, and a quarter must
   stay bigger than a dime at every size.

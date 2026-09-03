@@ -16,8 +16,10 @@ import './goods.css'
 import { append, el, svg } from '../../lib/dom.js'
 import { GOODS, GOOD_ART, goodFor } from '../../lib/goods.js'
 import { formatCents } from '../../lib/money.js'
+import { createBakeryCounter } from '../bakery-counter/bakery-counter.js'
 import { createConveyorBelt } from '../conveyor-belt/conveyor-belt.js'
 import { createConveyorItem, TRAY_RIDE_ASPECT } from '../conveyor-item/conveyor-item.js'
+import { createDuct } from '../duct/duct.js'
 
 /** The mockup's tray, so "1:1" on this page is life size on the bakery floor. */
 const TRAY_W = 100
@@ -26,10 +28,24 @@ const TRAY_W = 100
 const SLOT_PITCH = 148
 const SLOT_COUNT = 8
 
+/*
+ * A slice of the real frame, at the real numbers, so what this page shows is
+ * what the floor will show. The view owns these for real at M5; here they are
+ * only enough to hang one lane and the counter on.
+ */
+const FRAME_W = 1280
+const DUCT_W = 20
+const LANE_TOP = 196          /* the middle lane */
+const COUNTER_TOP = 440
+const RUN_X = 2               /* slot 0's left edge, just inside the oven duct */
+
+
 /** A price per good, so each tray reads as a tray rather than a swatch. */
 const PRICES = [31, 45, 28, 52, 19, 37]
 
-append(document.getElementById('test'), [
+const page = document.getElementById('test')
+
+append(page, [
     el('header', { class: 'pc-test-header' }, [
         el('h1', {}, 'Baked goods'),
         el('p', {}, 'Every good on its tray, at 1:1 and at 4×, then a belt of eight.'),
@@ -37,8 +53,19 @@ append(document.getElementById('test'), [
     traySection(1),
     traySection(4),
     beltSection(),
-    checksSection(),
 ])
+
+/*
+ * Appended in a second pass, after everything above is in the document.
+ *
+ * Half of what is worth checking here is where things land relative to each
+ * other — whether the band really runs *behind* a duct rather than merely near
+ * one — and none of that has a position until it is in a document. Done
+ * synchronously rather than from a `requestAnimationFrame`: a frame callback
+ * never fires in a backgrounded tab, so the checks would silently report
+ * nothing at all on a page opened in a tab that was not looked at yet.
+ */
+append(page, checksSection())
 
 /* ---------------------------------------------------------------------------
  * Every good on a tray, at one magnification.
@@ -69,7 +96,8 @@ function traySection(zoom) {
 }
 
 /* ---------------------------------------------------------------------------
- * A belt of eight, at the pitch the bakery floor uses.
+ * A belt of eight, duct to duct, above the counter — the bakery's own geometry
+ * at life size, without the game wired to it.
  * ------------------------------------------------------------------------- */
 function beltSection() {
     const belt = createConveyorBelt({ slotWidth: SLOT_PITCH, slotCount: SLOT_COUNT })
@@ -80,13 +108,40 @@ function beltSection() {
         good: goodFor(`goods-page-${slot}`),
     })))
 
+    belt.el.classList.add('is-placed')
+    belt.el.style.setProperty('--pc-belt-x', `${RUN_X}px`)
+    belt.el.style.setProperty('--pc-belt-y', `${LANE_TOP}px`)
+
+    // One pair per lane, flush to the frame's edges. Mounted in a layer above
+    // the belt, which is the whole job: the belt has to run *behind* them.
+    const ducts = [
+        { side: 'in', left: 0 },
+        { side: 'out', left: FRAME_W - DUCT_W },
+    ].map(({ side, left }) => {
+        const duct = createDuct({ side, height: belt.height })
+        duct.el.style.left = `${left}px`
+        duct.el.style.top = `${LANE_TOP}px`
+        return duct.el
+    })
+
+    const counter = createBakeryCounter({ top: COUNTER_TOP })
+
+    const frame = el('div', { class: 'pc-test-frame' }, [
+        el('div', { class: 'pc-test-backroom' }),
+        el('div', { class: 'pc-test-belts' }, belt.el),
+        el('div', { class: 'pc-test-ducts' }, ducts),
+        counter.el,
+    ])
+
     return el('section', { class: 'pc-card pc-stack' }, [
-        el('h2', {}, 'A belt of eight'),
-        belt.el,
+        el('h2', {}, 'A belt of eight, in the room'),
+        frame,
         el('p', { class: 'pc-test-caption' }, [
             'Eight slots at a ',
             el('code', {}, String(SLOT_PITCH)),
-            ' pitch. Six goods over eight slots repeat, and that is expected — the ',
+            ' pitch, running duct to duct. The band disappears past both ends rather ',
+            'than stopping at them, and the two duct ends stay tellable apart in ',
+            'greyscale. Six goods over eight slots repeat, and that is expected — the ',
             'price is what identifies a tray, not the picture.',
         ]),
     ])
@@ -233,6 +288,89 @@ function runChecks() {
         tray.destroy()
         if (detail) return detail
         if (!hangs) return 'the card does not overhang the deck'
+    })
+
+    /* ------------------------------------------------------- the room */
+
+    // Frame-relative, so these read as the numbers the mockup is specified in.
+    const frame = document.querySelector('.pc-test-frame')
+    const box = frame.getBoundingClientRect()
+    const edge = Number(getComputedStyle(frame).borderLeftWidth.replace('px', ''))
+    const span = node => {
+        const rect = node.getBoundingClientRect()
+        return {
+            left: Math.round(rect.left - box.left - edge),
+            right: Math.round(rect.right - box.left - edge),
+            top: Math.round(rect.top - box.top - edge),
+            bottom: Math.round(rect.bottom - box.top - edge),
+        }
+    }
+
+    const ductNodes = [...frame.querySelectorAll('.pc-duct')]
+    const bandNode = frame.querySelector('.pc-belt__band')
+
+    check('a duct is 20 wide and flush to its frame edge', () => {
+        const [into, out] = ductNodes.map(span)
+        if (into.left !== 0) return `oven duct at ${into.left}`
+        if (into.right - into.left !== DUCT_W) return `oven duct ${into.right - into.left} wide`
+        if (out.right !== FRAME_W) return `waste duct ends at ${out.right}`
+    })
+
+    check('a duct is exactly as deep as the belt it covers', () => {
+        const belt = frame.querySelector('.pc-belt')
+        const bandBottom = span(bandNode).bottom
+        for (const node of ductNodes) {
+            const rect = span(node)
+            if (rect.top !== LANE_TOP) return `duct top ${rect.top}`
+            if (rect.bottom !== bandBottom) return `duct ends at ${rect.bottom}, band at ${bandBottom}`
+        }
+        if (!belt) return 'no belt'
+    })
+
+    // The whole job of a duct. A belt that stops at one is a belt that comes
+    // from nowhere; a belt that runs through is a belt with an oven behind it.
+    check('the band runs behind both ducts and off the frame', () => {
+        const band = span(bandNode)
+        if (band.left >= 0) return `band starts at ${band.left}, inside the frame`
+        if (band.right <= FRAME_W) return `band ends at ${band.right}, inside the frame`
+    })
+
+    // Not by side alone: the two ends of a belt mean opposite things, and one
+    // of them has to still read that way to a child who cannot see colour.
+    check('the two duct ends differ, and differ in brightness', () => {
+        const [into, out] = ductNodes.map(node =>
+            getComputedStyle(node.firstElementChild).backgroundColor)
+        if (into === out) return 'both lips are the same colour'
+
+        const grey = colour => {
+            const [r, g, b] = colour.match(/\d+/g).map(Number)
+            return 0.2126 * r + 0.7152 * g + 0.0722 * b
+        }
+        if (Math.abs(grey(into) - grey(out)) < 40) {
+            return `too close in greyscale: ${grey(into).toFixed(0)} vs ${grey(out).toFixed(0)}`
+        }
+    })
+
+    check('a duct says nothing — the belt already names itself', () => {
+        for (const node of ductNodes) {
+            if (node.getAttribute('aria-hidden') !== 'true') return 'a duct is not aria-hidden'
+        }
+    })
+
+    // One number, spent twice. A second copy of the slab's depth in CSS is how
+    // a hairline of wall opens up between the counter's two halves.
+    check('the counter face starts exactly where the slab ends', () => {
+        const slab = span(frame.querySelector('.pc-counter__top'))
+        const face = span(frame.querySelector('.pc-counter__face'))
+        if (slab.top !== COUNTER_TOP) return `slab at ${slab.top}`
+        return expect(face.top, slab.bottom, 'face top')
+    })
+
+    check('the counter bleeds past both frame edges', () => {
+        for (const part of ['.pc-counter__top', '.pc-counter__face']) {
+            const rect = span(frame.querySelector(part))
+            if (rect.left >= 0 || rect.right <= FRAME_W) return `${part} does not bleed`
+        }
     })
 
     check('goodFor is stable, and spreads over the whole set', () => {

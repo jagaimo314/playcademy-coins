@@ -73,6 +73,44 @@
     stroke-dasharray: 4 3;
 }
 
+/*
+ * A slice of the real 1280-wide frame, clipped exactly as the frame clips: this
+ * is what proves the band's capped ends really do disappear rather than merely
+ * sit somewhere out of the way. Scaled down to fit the page, so the geometry is
+ * the floor's even when the pixels are not.
+ */
+.pc-test-frame {
+    position: relative;
+    width: 1280px;
+    height: 560px;
+    max-width: 100%;
+    overflow: hidden;
+    background: var(--pc-sky);
+    border-radius: var(--pc-radius);
+    /*
+     * An outline, not a border, for the same reason the real frame uses one:
+     * it takes up no layout, so every offset inside is measured from the 1280
+     * box itself rather than from 1280 minus two edges. With a border, a
+     * counter told to bleed 4px past the frame lands 1px inside it.
+     */
+    outline: var(--pc-border);
+}
+
+.pc-test-backroom {
+    position: absolute;
+    inset: 64px 0 280px 0;
+    background: var(--pc-backroom);
+}
+
+/* Layer order is the point: belts, then ducts over them, then the counter. */
+.pc-test-belts,
+.pc-test-ducts {
+    position: absolute;
+    inset: 0;
+}
+
+.pc-test-ducts .pc-duct { position: absolute; }
+
 .checks {
     list-style: none;
     margin: var(--pc-space-3) 0 0;

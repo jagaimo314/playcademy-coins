@@ -117,7 +117,7 @@ export function createBakeryGame({ playerId, config, game, onClaim }) {
             const share = band / list.length
             const top = BAKERY_TOP + share * index + (share - belt.height) / 2
 
-            belt.el.classList.add('pc-game__belt')
+            belt.el.classList.add('pc-game__belt', 'is-placed')
             belt.el.style.setProperty('--pc-belt-x', `${BELT_X}px`)
             belt.el.style.setProperty('--pc-belt-y', `${Math.round(top)}px`)
 

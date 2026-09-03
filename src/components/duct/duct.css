@@ -1,0 +1,45 @@
+/*
+ * A cut in the wall. No radius, no shadow, no gradient — every one of those
+ * would make it read as an object standing on the wall rather than a hole
+ * through it, and the belt has to go *through*.
+ *
+ * The caller positions it; the component only says how wide the opening is and
+ * what the light at its lip means.
+ */
+.pc-duct {
+    /* Only so the lip can be placed against it. Where the duct itself sits is
+       the caller's business, and both callers position it absolutely. */
+    position: relative;
+    width: 20px;
+    background: var(--pc-ink);
+}
+
+/* Any `display` beats the user agent's `[hidden]`, so callers get this. */
+.pc-duct[hidden] { display: none; }
+
+/*
+ * The lip, inset from the inner edge so it reads as light falling into the
+ * opening rather than as a stripe painted on its face.
+ */
+.pc-duct__lip {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    width: 3px;
+}
+
+/* Straight out of the oven: warm light at the mouth. */
+.pc-duct--in .pc-duct__lip {
+    right: 3px;
+    background: var(--pc-gold-deep);
+}
+
+/*
+ * Gone to waste: no light at all, only a colder dark than the ink around it.
+ * The two ends must stay distinguishable with the page in greyscale, which is
+ * why this is a brightness difference and not a hue one.
+ */
+.pc-duct--out .pc-duct__lip {
+    left: 3px;
+    background: var(--pc-duct-deep);
+}

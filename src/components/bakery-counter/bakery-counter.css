@@ -1,0 +1,55 @@
+/*
+ * Geometry arrives from `bakery-counter.js` as custom properties, so the slab's
+ * depth is written once and the face starts exactly where the slab ends. A
+ * second copy of that number here is how the seam between them opens up.
+ */
+.pc-counter {
+    position: absolute;
+    inset: 0;
+    /* A layer of scenery over the machinery. Nothing in it is aimed at. */
+    pointer-events: none;
+}
+
+.pc-counter[hidden] { display: none; }
+
+/*
+ * The slab. Its own top edge catches the light, and the hard shadow beneath is
+ * what says it overhangs the face — without that it reads as a stripe painted
+ * on the wall rather than as a surface you could put a bun down on.
+ */
+.pc-counter__top {
+    position: absolute;
+    top: var(--pc-counter-y);
+    left: calc(var(--pc-counter-bleed) * -1);
+    right: calc(var(--pc-counter-bleed) * -1);
+    height: var(--pc-counter-slab);
+
+    background: linear-gradient(to bottom,
+        var(--pc-counter-top-light) 0 8px, var(--pc-counter-top) 8px 100%);
+    border: 3px solid var(--pc-ink);
+    border-radius: 8px;
+    box-shadow: 0 5px 0 -1px color-mix(in srgb, var(--pc-ink) 30%, transparent);
+}
+
+/*
+ * The face, from under the slab to the bottom of the frame. Planked at the same
+ * pitch the belts run at, which is the only thing tying the warm half of the
+ * picture to the cool half.
+ */
+.pc-counter__face {
+    position: absolute;
+    top: calc(var(--pc-counter-y) + var(--pc-counter-slab));
+    left: calc(var(--pc-counter-bleed) * -1);
+    right: calc(var(--pc-counter-bleed) * -1);
+    bottom: calc(var(--pc-counter-bleed) * -1);
+
+    background:
+        linear-gradient(to bottom,
+            color-mix(in srgb, var(--pc-white) 16%, transparent) 0 6px, transparent 6px),
+        repeating-linear-gradient(to right,
+            transparent 0 144px,
+            color-mix(in srgb, var(--pc-ink) 18%, transparent) 144px 148px),
+        var(--pc-counter-face);
+    border-left: 3px solid var(--pc-ink);
+    border-right: 3px solid var(--pc-ink);
+}

@@ -124,6 +124,7 @@
 
     /* the counter — the warm boundary between machinery and people */
     --pc-counter-top: #E0A469;
+    --pc-counter-top-light: #EFBA83;  /* the lit front edge of the slab */
     --pc-counter-face: #CF8E58;
     --pc-counter-deep: #A96635;
 }

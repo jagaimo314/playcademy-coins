@@ -7,6 +7,31 @@
     overflow: visible;
 }
 
+/*
+ * Opt-in placement, for a caller hanging a belt in a positioned frame.
+ *
+ * `--pc-belt-x` / `--pc-belt-y` are where the *run* starts — slot 0's top-left
+ * corner — and the component subtracts its own origin, the overscan and stroke
+ * room that sit outside that run. The caller keeps talking about the run and
+ * never learns the overscan exists. Making the caller do this subtraction is
+ * the version of the arrangement that drifts, so the arithmetic lives here,
+ * beside the component that publishes both halves of it.
+ */
+.pc-belt.is-placed {
+    position: absolute;
+    left: calc(var(--pc-belt-x) - var(--pc-belt-origin-x));
+    top: calc(var(--pc-belt-y) - var(--pc-belt-origin-y));
+
+    /*
+     * Natural size, and the frame does the clipping. The `max-width` above is
+     * for a belt standing on its own in a page that has to fit it; here the
+     * overscan is *meant* to hang off the frame, and shrinking the belt to fit
+     * it back inside would undo the whole point — as well as quietly making
+     * every tray narrower than the pitch the layout was measured at.
+     */
+    max-width: none;
+}
+
 .pc-belt__band {
     fill: var(--pc-ink-soft);
     stroke: var(--pc-ink);
