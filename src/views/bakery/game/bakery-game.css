@@ -2,9 +2,13 @@
  * The bakery floor.
  *
  * Same frame trick as the Lesson: a fixed stage over the whole viewport holding
- * a 1200x800 box that centres with `margin: auto`. `justify-content: center`
+ * a 1280x720 box that centres with `margin: auto`. `justify-content: center`
  * would look identical until the display is smaller than the frame, at which
  * point it pushes the left edge somewhere no scrollbar can reach.
+ *
+ * Every band's offset arrives from `bakery-game.js` as a custom property. The
+ * vertical budget adds to 720 and is *derived* there rather than typed, and a
+ * second copy of any of those numbers here is how it stops adding up.
  */
 .pc-game {
     position: fixed;
@@ -16,77 +20,96 @@
     background: var(--pc-sky);
 }
 
-.pc-game__frame {
-    position: relative;
+/*
+ * The frame is scaled by a transform, which takes up no layout, so this box
+ * carries the scaled footprint for centring and scrolling to work against.
+ *
+ * `margin: auto` rather than the stage centring its own content: on a display
+ * too small for the frame that keeps the overflow reachable, where
+ * `justify-content: center` would push the left edge somewhere the scrollbar
+ * cannot follow.
+ */
+.pc-game__fit {
     flex: 0 0 auto;
     margin: auto;
 
+    width: calc(var(--pc-game-width) * var(--pc-game-scale));
+    height: calc(var(--pc-game-height) * var(--pc-game-scale));
+}
+
+/*
+ * Scaled from its top left corner, which is what lets `.pc-game__fit` above
+ * predict its footprint as a plain multiplication.
+ */
+.pc-game__frame {
+    position: relative;
+
     width: var(--pc-game-width);
     height: var(--pc-game-height);
+    transform: scale(var(--pc-game-scale));
+    transform-origin: top left;
 
-    background: var(--pc-white);
+    background: var(--pc-sky);
     /*
      * An outline rather than a border, so it takes up no layout: every offset
-     * inside is then measured from the 1200x800 box itself rather than from
-     * 1200x800 minus two edges.
+     * inside is then measured from the 1280x720 box itself rather than from
+     * 1280x720 minus two edges. The counter is told to bleed 4px past each
+     * edge, and with a border it would land inside one.
      */
     outline: var(--pc-border);
     border-radius: var(--pc-radius);
     overflow: hidden;
 }
 
-/* ------------------------------------------------------------- the counters */
+/* -------------------------------------------------------------- the toolbar */
 
-.pc-game__scores {
+.pc-game__toolbar {
     position: absolute;
     inset: 0 0 auto 0;
-    height: 60px;
+    height: var(--pc-game-toolbar);
 
     display: flex;
     align-items: center;
     justify-content: center;
-    gap: var(--pc-space-6);
+    gap: 64px;
 
-    background: var(--pc-sky-deep);
-    border-bottom: var(--pc-border);
+    background: var(--pc-sky);
+    border-bottom: 3px solid var(--pc-ink);
 }
 
-.pc-game__score {
-    margin: 0;
-    font-family: var(--pc-font-display);
-    font-size: var(--pc-text-lg);
-    font-weight: 700;
-    display: flex;
-    align-items: baseline;
-    gap: 0.3em;
-}
+.pc-game__toolbar .pc-meter { width: 396px; }
 
-.pc-game__score span {
-    font-size: var(--pc-text-sm);
-    color: var(--pc-ink-soft);
-}
-
-.pc-game__count {
-    font-size: 1.6em;
-    line-height: 1;
-}
+/* ----------------------------------------------------------- the back room */
 
 /*
- * The two counters read in opposite directions, so they are told apart by their
- * label and their position as well as by colour — the number is never the only
- * thing carrying the meaning.
+ * The wall the machinery runs against: cool and desaturated, so the food — the
+ * warmest thing on screen — reads as being in front of it. The seams give the
+ * wall a scale without giving it a perspective line.
  */
-.pc-game__score--served .pc-game__count { color: var(--pc-green-ink); }
-.pc-game__score--wasted .pc-game__count { color: var(--pc-red-deep); }
+.pc-game__backroom {
+    position: absolute;
+    inset: var(--pc-game-toolbar) 0 auto 0;
+    height: calc(var(--pc-game-counter) - var(--pc-game-toolbar));
+
+    background:
+        repeating-linear-gradient(to bottom,
+            transparent 0 43px,
+            color-mix(in srgb, var(--pc-ink) 5%, transparent) 43px 45px),
+        var(--pc-backroom);
+}
 
 /* ----------------------------------------------------------------- the belts */
 
 .pc-game__belts,
+.pc-game__ducts,
 .pc-game__flights {
     position: absolute;
     inset: 0;
     pointer-events: none;
 }
+
+/* The ducts are cuts in the wall; the belt runs behind them. */
+.pc-game__ducts .pc-duct { position: absolute; }
 
 /* Trays are the interactive part; the layer around them must not swallow taps. */
 .pc-game__belts .pc-tray { pointer-events: auto; }
@@ -127,20 +150,32 @@
 
 /* ------------------------------------------------------------------ the base */
 
+/*
+ * Pinned to the top of the band rather than the bottom of the frame, so the
+ * strip of counter left showing beneath the panels stays the same however tall
+ * a panel is — that strip is what puts the panels *at* the counter.
+ */
 .pc-game__base {
     position: absolute;
-    inset: auto 0 0 0;
+    inset: var(--pc-game-base) 0 auto 0;
 
     display: flex;
-    align-items: flex-end;
+    align-items: flex-start;
     justify-content: center;
-    gap: 12px;
-    padding: 0 20px 20px;
+    gap: var(--pc-game-panel-gap);
+    padding: 0 var(--pc-game-panel-margin);
 }
+
+/*
+ * An ink outline outside the coloured band. The accent alone was enough over
+ * sky; over warm wood it is not, and a panel that blends into the counter is a
+ * panel a child cannot find their own coins in.
+ */
+.pc-game__base .pc-wallet { outline: var(--pc-border); }
 
 /* Your own panel is lifted and outlined; the name on the tab says so too. */
 .pc-game__base .is-you {
-    transform: translateY(-6px);
+    transform: translateY(-10px);
     box-shadow: var(--pc-shadow);
 }
 

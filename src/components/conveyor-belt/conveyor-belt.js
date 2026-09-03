@@ -32,6 +32,18 @@ export const HOP_MS = 260
 const TRAY_FIT = 100 / 148
 
 /**
+ * How wide a tray on a belt of this pitch will be.
+ *
+ * Exported so a caller building trays *before* it has a belt to ask — the view
+ * makes one per wire item — gets the same answer the belt will, rather than
+ * keeping a second copy of the fraction that drifts the first time it changes.
+ */
+export function trayWidthFor(slotWidth) {
+    if (!(slotWidth > 0)) throw new RangeError(`slotWidth must be > 0, got ${slotWidth}`)
+    return Math.round(TRAY_FIT * slotWidth)
+}
+
+/**
  * Depth of the band, as a fraction of the *tray* rather than of the slot. The
  * band was chosen against the tray it carries — 26 deep under a 100 tray — and
  * tying it to the slot instead would let a change of pitch alone thicken it.
@@ -93,7 +105,7 @@ export function createConveyorBelt({
      */
     const overscan = slotWidth
 
-    const trayWidth = Math.round(TRAY_FIT * slotWidth)
+    const trayWidth = trayWidthFor(slotWidth)
     const bandHeight = BAND * trayWidth
 
     /**

@@ -1,0 +1,69 @@
+.pc-meter {
+    /* The caller decides how wide; everything else here is fixed. */
+    display: flex;
+    flex-direction: column;
+}
+
+.pc-meter[hidden] { display: none; }
+
+.pc-meter__head {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    margin-bottom: 5px;
+
+    font-family: var(--pc-font-display);
+    font-weight: 800;
+    font-size: 15px;
+}
+
+.pc-meter__count {
+    font-size: 21px;
+    line-height: 1;
+}
+
+/* The total is context, not the number being read; it recedes. */
+.pc-meter__value em {
+    font-size: 13px;
+    font-style: normal;
+    color: var(--pc-ink-soft);
+}
+
+/*
+ * A pill of cells. The hard shadow and the ink outline are what make it an
+ * object on the toolbar rather than a rule drawn across it.
+ */
+.pc-meter__track {
+    display: flex;
+    gap: 3px;
+    height: 22px;
+    padding: 3px;
+
+    background: var(--pc-white);
+    border: var(--pc-border);
+    border-radius: var(--pc-radius-pill);
+    box-shadow: var(--pc-shadow-sm);
+}
+
+.pc-meter__track i {
+    flex: 1;
+    border-radius: 3px;
+    background: var(--pc-sky-deep);
+}
+
+/*
+ * The fallback for a total too large to count. One cell, sized as a fraction,
+ * and it must not stretch to fill the row the way a counted cell does.
+ */
+.pc-meter__track.is-continuous {
+    gap: 0;
+    justify-content: flex-start;
+}
+
+.pc-meter__track.is-continuous i { border-radius: var(--pc-radius-pill); }
+
+.pc-meter--good .pc-meter__track i.is-on { background: var(--pc-green); }
+.pc-meter--good .pc-meter__count { color: var(--pc-green-ink); }
+
+.pc-meter--waste .pc-meter__track i.is-on { background: var(--pc-red); }
+.pc-meter--waste .pc-meter__count { color: var(--pc-red-ink); }

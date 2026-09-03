@@ -79,11 +79,17 @@
  * sit somewhere out of the way. Scaled down to fit the page, so the geometry is
  * the floor's even when the pixels are not.
  */
+/*
+ * Never shrunk to fit the page. This is a slice of the real 1280 frame at 1:1,
+ * and a `max-width` here would quietly rescale the one thing the page exists to
+ * show — the numbers stop being the floor's numbers and the checks below stop
+ * meaning anything. It scrolls instead; see `.pc-test-stage`.
+ */
 .pc-test-frame {
     position: relative;
+    flex: none;
     width: 1280px;
     height: 560px;
-    max-width: 100%;
     overflow: hidden;
     background: var(--pc-sky);
     border-radius: var(--pc-radius);
@@ -122,3 +128,10 @@
 .checks .is-pass { color: var(--pc-green-ink); font-weight: 800; }
 .checks .is-fail { color: var(--pc-red-deep); font-weight: 800; }
 .checks__detail { color: var(--pc-red-deep); }
+
+/* The frame is 1280 wide whatever the window is; this is what carries it. */
+.pc-test-stage {
+    display: flex;
+    overflow-x: auto;
+    padding-bottom: var(--pc-space-2);
+}

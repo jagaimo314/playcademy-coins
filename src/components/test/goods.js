@@ -135,7 +135,7 @@ function beltSection() {
 
     return el('section', { class: 'pc-card pc-stack' }, [
         el('h2', {}, 'A belt of eight, in the room'),
-        frame,
+        el('div', { class: 'pc-test-stage' }, frame),
         el('p', { class: 'pc-test-caption' }, [
             'Eight slots at a ',
             el('code', {}, String(SLOT_PITCH)),

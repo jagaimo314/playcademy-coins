@@ -25,7 +25,8 @@ components report back through callbacks passed in (`onClick`, `onSubmit`, `onRe
 | `primary-button/` | The app's main button. A disabled one renders its reason. |
 | `duct/` | The opening a belt runs through. A cut in the wall, not an object on it — mounted *above* the belts, which is the whole job: it is what makes a belt run through the wall rather than stop at it. |
 | `bakery-counter/` | The horizon of the Bakery: cool machinery above it, a player's own panel below. Scenery, and the only thing tying the warm half of the picture to the cool half. |
-| `progress-bar/` | Position through a set of steps. Shows position, not score, on purpose. |
+| `progress-bar/` | Position through a set of steps. Shows position, not score, on purpose. The Lesson's; the Bakery uses `meter/`. |
+| `meter/` | A count drawn as *cells* rather than a fill. A K–2 kid can count cells; nobody can read a bar that is 30% along. Falls back to a fill above 20, where cells stop being countable. |
 | `Grid.js` | Plain SVG grid: lines, plus cell ↔ row/col maths in any reading `direction`. |
 | `SkipCountGrid.js` | `Grid` + cell labels, interval indicators, the reveal animation, cell highlights, and the student's answer star. |
 | `SkipCountCurrencyGrid.js` | `SkipCountGrid` in cents, with a ghosted real coin as each indicator. |

@@ -1,6 +1,10 @@
 import { animationSettled, clear, el, prefersReducedMotion } from '../../../lib/dom.js'
-import { createConveyorBelt, HOP_MS } from '../../../components/conveyor-belt/conveyor-belt.js'
+import { goodFor } from '../../../lib/goods.js'
+import { createBakeryCounter } from '../../../components/bakery-counter/bakery-counter.js'
+import { createConveyorBelt, HOP_MS, trayWidthFor } from '../../../components/conveyor-belt/conveyor-belt.js'
 import { createConveyorItem } from '../../../components/conveyor-item/conveyor-item.js'
+import { createDuct } from '../../../components/duct/duct.js'
+import { createMeter } from '../../../components/meter/meter.js'
 import { createPlayerWallet } from '../../../components/player-wallet/player-wallet.js'
 import './bakery-game.css'
 
@@ -20,36 +24,86 @@ import './bakery-game.css'
  * something owns a tray's flight once the belt has detached it.
  */
 
-/**
+/*
+ * The floor, in design pixels.
+ *
  * A fixed frame, like the Lesson's, so the geometry is identical on every
  * display. A belt that was 8 slots wide on a laptop and 8 slots narrow on a
  * tablet would make "which tray did you tap" a different question per device.
+ * 1280x720 is the Lesson's box as well: two screens in one app should not have
+ * two design boxes.
+ *
+ * Every band below is a named constant and the height is *derived* from them
+ * rather than typed. The sum has to come to 720 and has to keep coming to 720,
+ * which is a property a derivation holds and a literal does not.
  */
-const FRAME = Object.freeze({ width: 1200, height: 800 })
+const FRAME_WIDTH = 1280
 
-/** The three bands of the floor, measured from the frame's top edge. */
-const BAKERY_TOP = 70
-const BAKERY_BOTTOM = 620
-const BASE_TOP = 640
+/** The toolbar: two segmented meters, and nothing else. */
+const TOOLBAR_H = 64
 
-/** Where the incinerator will go at M3. Belts stop short of it. */
-const INCINERATOR_X = 1080
+/** A lane: a tray box and the band it rides on. Asserted against the belt below. */
+const LANE_H = 112
+const LANE_PITCH = 124
+const LANE_LEAD = 8         /* clearance between the toolbar and the first lane */
+const LANES = 3             /* what the bay is sized for; fewer belts centre in it */
 
-/** Left margin for the belts, so the oven end is not flush against the frame. */
-const BELT_X = 60
+const BELT_BAY_H = LANE_LEAD + LANE_PITCH * (LANES - 1) + LANE_H
 
-const WALLET_MARGIN = 20
-const WALLET_GAP = 12
+/** Breathing room between the last band and the counter's slab. */
+const COUNTER_GAP = 8
+const COUNTER_TOP = TOOLBAR_H + BELT_BAY_H + COUNTER_GAP
+const SLAB_H = 22
+
+/**
+ * How far the panels sit below the counter's front edge. The strip of wood left
+ * above them is what makes the panels read as standing *at* the counter rather
+ * than as being part of it.
+ */
+const PANEL_INSET = 54
+const PANEL_TOP = COUNTER_TOP + SLAB_H + PANEL_INSET
+const PANEL_H = 190
+const PANEL_FOOT = 14
+
+const FRAME_HEIGHT = PANEL_TOP + PANEL_H + PANEL_FOOT
+
+/**
+ * The floor under the scale. Below this a price stops being readable and a tray
+ * stops being a target, so the frame stops shrinking and the stage scrolls
+ * instead — the same trade the Lesson makes at the same size.
+ */
+const MIN_FRAME_HEIGHT = 400
+const MIN_SCALE = MIN_FRAME_HEIGHT / FRAME_HEIGHT
+
+/** Flush to the frame's edges: a duct is a cut in the wall, not a fitting on it. */
+const DUCT_W = 20
+
+/**
+ * How far the belt run is inset from each frame edge.
+ *
+ * This is what sets the pitch. The run is a fixed width and the server's
+ * `slotCount` divides it, which is why `slotPitchPx` off the wire is now
+ * advisory: the belt has to fill the room it is given, not the room the server
+ * imagines. At eight slots this comes to the 148 pitch the layout was measured
+ * at, carrying a 100-wide tray.
+ */
+const RUN_MARGIN = 48
+const RUN_WIDTH = FRAME_WIDTH - RUN_MARGIN * 2
+
+const PANEL_MARGIN = 20
+const PANEL_GAP = 12
 
 export function createBakeryGame({ playerId, config, game, onClaim }) {
-    const slotPitch = config.slotPitchPx ?? 120
     const slotCount = config.slotCount ?? 8
+    const slotPitch = RUN_WIDTH / slotCount
     const hopMs = config.hopMs ?? HOP_MS
 
     /** `itemId -> tray instance`. The mirror the whole file exists for. */
     const trays = new Map()
     /** `beltId -> belt instance`. */
     const belts = new Map()
+    /** A pair per lane, rebuilt with the belts they cover. */
+    const ducts = []
     /** `playerId -> wallet instance`. */
     const wallets = new Map()
 
@@ -57,17 +111,42 @@ export function createBakeryGame({ playerId, config, game, onClaim }) {
 
     /* --------------------------------------------------------------- chrome */
 
-    const servedLabel = el('strong', { class: 'pc-game__count' }, '0')
-    const wastedLabel = el('strong', { class: 'pc-game__count' }, '0')
+    /*
+     * Cells, not fills. The two meters read in opposite directions — one counts
+     * towards something wanted, the other towards something feared — and they
+     * differ by label and by position as well as by colour.
+     */
+    const servedMeter = createMeter({
+        label: 'Items purchased',
+        value: game.served,
+        total: game.target,
+        tone: 'good',
+    })
 
-    const scoreBar = el('div', { class: 'pc-game__scores', role: 'status' }, [
-        el('p', { class: 'pc-game__score pc-game__score--served' },
-            ['Served ', servedLabel, el('span', {}, ` of ${game.target}`)]),
-        el('p', { class: 'pc-game__score pc-game__score--wasted' },
-            ['Wasted ', wastedLabel, el('span', {}, ` of ${game.wasteLimit}`)]),
-    ])
+    const wastedMeter = createMeter({
+        label: 'Items wasted',
+        value: game.wasted,
+        total: game.wasteLimit,
+        tone: 'waste',
+    })
+
+    const toolbar = el('div', { class: 'pc-game__toolbar', role: 'status' },
+        [servedMeter.el, wastedMeter.el])
+
+    /** The wall the belts run against. Scenery, and named by nothing. */
+    const backroom = el('div', { class: 'pc-game__backroom', 'aria-hidden': 'true' })
 
     const beltLayer = el('div', { class: 'pc-game__belts' })
+
+    /**
+     * The ducts sit in their own layer *above* the belts, and that layering is
+     * the entire point of them: it is what makes a belt run through the wall
+     * rather than stop at it.
+     */
+    const ductLayer = el('div', { class: 'pc-game__ducts', 'aria-hidden': 'true' })
+
+    const counter = createBakeryCounter({ top: COUNTER_TOP })
+
     const walletRow = el('div', { class: 'pc-game__base' })
 
     /**
@@ -79,50 +158,141 @@ export function createBakeryGame({ playerId, config, game, onClaim }) {
 
     const overlay = el('div', { class: 'pc-game__overlay', hidden: true })
 
-    const frame = el('div', {
-        class: 'pc-game__frame',
-        style: { '--pc-game-width': `${FRAME.width}px`, '--pc-game-height': `${FRAME.height}px` },
-    }, [scoreBar, beltLayer, flightLayer, walletRow, overlay])
+    /*
+     * Bottom to top: wall, belts, the ducts they run through, the counter, the
+     * players' panels, then the flight layer. A tray flying to a wallet has to
+     * pass *over* the machinery and over the counter, which is the whole reason
+     * the flight layer sits where it does.
+     */
+    const frame = el('div', { class: 'pc-game__frame' }, [
+        backroom,
+        toolbar,
+        beltLayer,
+        ductLayer,
+        counter.el,
+        walletRow,
+        flightLayer,
+        overlay,
+    ])
 
-    const root = el('section', { class: 'pc-game' }, frame)
+    /*
+     * The frame is scaled with a transform, which takes up no layout at all, so
+     * the box centring and scrolling can see has to be this one — sized to what
+     * the frame comes out as once scaled.
+     */
+    const fitBox = el('div', { class: 'pc-game__fit' }, frame)
+
+    /*
+     * The geometry lives on the stage, not on the frame, because `.pc-game__fit`
+     * sits *between* them and has to multiply the design width by the scale.
+     * Set on the frame, those properties would not be in scope for the very box
+     * whose job is to predict the frame's footprint.
+     */
+    const root = el('section', {
+        class: 'pc-game',
+        style: {
+            '--pc-game-width': `${FRAME_WIDTH}px`,
+            '--pc-game-height': `${FRAME_HEIGHT}px`,
+            '--pc-game-scale': '1',
+            '--pc-game-toolbar': `${TOOLBAR_H}px`,
+            '--pc-game-counter': `${COUNTER_TOP}px`,
+            '--pc-game-base': `${PANEL_TOP}px`,
+            '--pc-game-panel-margin': `${PANEL_MARGIN}px`,
+            '--pc-game-panel-gap': `${PANEL_GAP}px`,
+        },
+    }, fitBox)
+
+    /**
+     * Fit the design box to the display, and keep fitting it.
+     *
+     * The same arrangement the Lesson uses, and for the same reason: this is a
+     * fixed 1280x720 layout, so on any display smaller than that it either
+     * scales or it hides half of itself behind a scrollbar. A child cannot tap
+     * a tray that is off the side of the screen, and the fourth player cannot
+     * see their own hand.
+     *
+     * Height leads, because the design is a stack of bands that has to add up.
+     * Width holds a veto — a frame wider than the window puts the waste duct off
+     * the edge. The floor beats both: below `MIN_FRAME_HEIGHT` the bakery stops
+     * shrinking and the stage clips and scrolls instead, on the grounds that a
+     * belt too small to read is no more use than one you have to scroll to.
+     */
+    let scale = 0
+
+    function fit() {
+        const { clientWidth, clientHeight } = root
+        if (!clientWidth || !clientHeight) return
+
+        const next = Math.max(
+            MIN_SCALE,
+            Math.min(clientHeight / FRAME_HEIGHT, clientWidth / FRAME_WIDTH),
+        )
+
+        // A scrollbar arriving or leaving changes the box that chose the scale,
+        // which can otherwise chase itself round the observer a frame at a
+        // time. Ignoring changes too small to see is what settles it.
+        if (Math.abs(next - scale) < 0.002) return
+
+        scale = next
+        root.style.setProperty('--pc-game-scale', String(scale))
+    }
+
+    const resizes = new ResizeObserver(fit)
+    resizes.observe(root)
 
     /* ---------------------------------------------------------------- build */
 
     /**
-     * Belts are spread down the bakery band rather than pinned to fixed rows, so
-     * one belt sits in the middle of the space and three fill it evenly. M3
-     * turns this from a constant into something that changes with the player
-     * count without any of the maths moving.
+     * Where a lane sits. Fixed rows rather than a share of whatever space there
+     * is, because the lanes *are* the layout: 72, 196 and 320, a `LANE_PITCH`
+     * apart. Fewer than three belts centre in the bay, so a single belt lands on
+     * the middle lane rather than at the top of an empty room.
      */
+    function laneTop(index, count) {
+        return TOOLBAR_H + LANE_LEAD + LANE_PITCH * (index + (LANES - count) / 2)
+    }
+
     function buildBelts(list) {
         for (const belt of belts.values()) belt.destroy()
-        belts.clear()
-        clear(beltLayer)
+        for (const duct of ducts) duct.destroy()
 
-        const band = BAKERY_BOTTOM - BAKERY_TOP
+        belts.clear()
+        ducts.length = 0
+        clear(beltLayer)
+        clear(ductLayer)
 
         list.forEach((wire, index) => {
             const belt = createConveyorBelt({ slotWidth: slotPitch, slotCount })
+            const top = laneTop(index, list.length)
 
-            // The pitch is quoted by the server, so a change there could push
-            // the mouth straight through the incinerator — which is exactly the
-            // bug the 120px pitch was chosen to fix. Caught here rather than
-            // discovered by looking at it.
-            if (BELT_X + belt.width > INCINERATOR_X) {
+            // A lane reserves room for a tray and its band, and the belt is what
+            // actually decides how deep that is. Cheap to check, and the only
+            // thing standing between a changed tray proportion and a duct that
+            // stops short of the belt it is meant to swallow.
+            if (Math.round(belt.height) !== LANE_H) {
                 console.warn(
-                    `[bakery] a belt of ${slotCount} slots at ${slotPitch}px runs to `
-                    + `${BELT_X + belt.width}px, past the incinerator at ${INCINERATOR_X}px`)
+                    `[bakery] a belt at a ${Math.round(slotPitch)}px pitch is `
+                    + `${Math.round(belt.height)}px deep, not the ${LANE_H}px a lane reserves`)
             }
 
-            const share = band / list.length
-            const top = BAKERY_TOP + share * index + (share - belt.height) / 2
-
             belt.el.classList.add('pc-game__belt', 'is-placed')
-            belt.el.style.setProperty('--pc-belt-x', `${BELT_X}px`)
-            belt.el.style.setProperty('--pc-belt-y', `${Math.round(top)}px`)
+            belt.el.style.setProperty('--pc-belt-x', `${RUN_MARGIN}px`)
+            belt.el.style.setProperty('--pc-belt-y', `${top}px`)
 
             belts.set(wire.id, belt)
             beltLayer.appendChild(belt.el)
+
+            // One pair per lane, in the layer above. The belt runs behind both
+            // and out into its own overscan, so a tray arrives from somewhere
+            // and leaves for somewhere instead of blinking on at a frame edge.
+            for (const [side, left] of [['in', 0], ['out', FRAME_WIDTH - DUCT_W]]) {
+                const duct = createDuct({ side, height: belt.height })
+                duct.el.style.left = `${left}px`
+                duct.el.style.top = `${top}px`
+
+                ducts.push(duct)
+                ductLayer.appendChild(duct.el)
+            }
         })
     }
 
@@ -132,8 +302,19 @@ export function createBakeryGame({ playerId, config, game, onClaim }) {
         clear(walletRow)
 
         const list = Object.values(players)
+
+        /*
+         * The panels share the base band out between them, which at four players
+         * comes to the 301 the layout was measured at. Fewer players get wider
+         * panels rather than a gap: a room of two should not look like a room of
+         * four with two seats missing.
+         *
+         * The height is fixed, not derived from what is left below the counter —
+         * it is the box the coin fit was computed against, and the strip of
+         * counter showing under the panels is part of the picture.
+         */
         const width = Math.floor(
-            (FRAME.width - WALLET_MARGIN * 2 - WALLET_GAP * (list.length - 1)) / list.length)
+            (FRAME_WIDTH - PANEL_MARGIN * 2 - PANEL_GAP * (list.length - 1)) / list.length)
 
         for (const player of list) {
             const wallet = createPlayerWallet({
@@ -141,7 +322,8 @@ export function createBakeryGame({ playerId, config, game, onClaim }) {
                 color: player.colorSlot,
                 coins: player.coins ?? [],
                 width,
-                height: FRAME.height - BASE_TOP - WALLET_MARGIN,
+                height: PANEL_H,
+                gap: 10,
             })
 
             // Whose hand this is has to be sayable, not just shown by position:
@@ -164,7 +346,13 @@ export function createBakeryGame({ playerId, config, game, onClaim }) {
     function makeTray(wire) {
         const tray = createConveyorItem({
             price: wire.price,
-            trayWidth: Math.round(slotPitch * 0.82),
+            // The belt decides how wide a tray is; asking it is what keeps the
+            // two from drifting apart when the pitch changes.
+            trayWidth: trayWidthFor(slotPitch),
+            // Derived from the id rather than picked, because every player has
+            // to see the same pastry on the same tray — four kids round a table
+            // comparing screens is the actual test. See lib/goods.js.
+            good: goodFor(wire.id),
             onClick: () => claim(wire.id),
         })
 
@@ -294,7 +482,7 @@ export function createBakeryGame({ playerId, config, game, onClaim }) {
         const beltTop = Number.parseFloat(belt.el.style.getPropertyValue('--pc-belt-y')) || 0
 
         return {
-            left: BELT_X + x - tray.width / 2,
+            left: RUN_MARGIN + x - tray.width / 2,
             top: beltTop + y - tray.rideHeight,
         }
     }
@@ -338,7 +526,7 @@ export function createBakeryGame({ playerId, config, game, onClaim }) {
 
         // The frame is scaled to fit small screens, so client pixels are not
         // frame pixels. Dividing by the measured scale converts back.
-        const scale = frameBox.width / FRAME.width || 1
+        const scale = frameBox.width / FRAME_WIDTH || 1
 
         return {
             x: (walletBox.left + walletBox.width / 2 - frameBox.left) / scale - from.left,
@@ -346,14 +534,14 @@ export function createBakeryGame({ playerId, config, game, onClaim }) {
         }
     }
 
+    /**
+     * `total` is re-sent as well as `value`: a snapshot after a reconnect can
+     * arrive with a different target than the one the meters were built with,
+     * and a meter drawing ten cells for a game of eight is worse than no meter.
+     */
     function setScores(next) {
-        servedLabel.textContent = String(next.served)
-        wastedLabel.textContent = String(next.wasted)
-
-        // Never colour alone: the counters are already red and green, so the
-        // status role above reads the numbers out as well.
-        scoreBar.setAttribute('aria-label',
-            `Served ${next.served} of ${next.target}. Wasted ${next.wasted} of ${next.wasteLimit}.`)
+        servedMeter.update({ value: next.served, total: next.target })
+        wastedMeter.update({ value: next.wasted, total: next.wasteLimit })
     }
 
     function finish(payload) {
@@ -387,13 +575,21 @@ export function createBakeryGame({ playerId, config, game, onClaim }) {
          * of by hand. `destroy()` is where this app leaks.
          */
         destroy() {
+            resizes.disconnect()
+
             for (const tray of trays.values()) tray.destroy()
             for (const belt of belts.values()) belt.destroy()
+            for (const duct of ducts) duct.destroy()
             for (const wallet of wallets.values()) wallet.destroy()
+
+            servedMeter.destroy()
+            wastedMeter.destroy()
+            counter.destroy()
 
             trays.clear()
             belts.clear()
             wallets.clear()
+            ducts.length = 0
 
             root.remove()
         },

@@ -150,7 +150,14 @@ and draws what it is told back. It computes no score, no position and no outcome
 *value* never crosses the wire — `hand/dealt` carries coin ids and the sum stays on the
 server, because that sum is the exercise.
 
-`game/` holds the floor: the frame's three bands, and the **id-to-tray mirror**.
+`game/` holds the floor: a **1280×720 design box**, the same one the Lesson uses, scaled to
+the display by a `ResizeObserver` — two screens in one app should not have two design boxes.
+Its vertical budget is *derived* from named band constants rather than typed, so the sum
+cannot drift: toolbar, belt bay (three lanes at a 124 pitch), counter, panels. The belt run
+is a fixed width and the server's `slotCount` divides it, which is why `slotPitchPx` off the
+wire is advisory — the belt fills the room it is given.
+
+It also holds the **id-to-tray mirror**.
 `belt/advanced` carries `itemId`s while `conveyor-belt.setSlotItems()` takes tray *instances*,
 so something has to hold the correspondence — and that same something owns a tray's flight
 once the belt has let go of it. It is a local mirror and deliberately **not** the store: this
