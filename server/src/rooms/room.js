@@ -31,9 +31,9 @@ import { createRateLimiter } from '../transport/socket.js'
 import { newPlayerId, newResumeToken } from '../transport/session.js'
 
 const ERRORS = {
-    ROOM_FULL: 'This bakery is full.',
+    ROOM_FULL: 'This bake sale is full.',
     GAME_IN_PROGRESS: 'That game has already started.',
-    NOT_HOST: 'Only the baker who opened the room can start it.',
+    NOT_HOST: 'Only the friend who opened the room can start it.',
     NOT_ENOUGH_PLAYERS: 'You need a friend before you can start.',
     INVALID_ACTION: 'That is not something you can do right now.',
     RATE_LIMITED: 'Slow down a moment.',

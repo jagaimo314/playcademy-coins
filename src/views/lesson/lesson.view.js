@@ -519,7 +519,7 @@ export function createLessonView({ store, navigate, params }) {
 
         frame.appendChild(createLessonCard({
             title: 'You did it!',
-            body: 'You counted every pile. The Bakery is open now.',
+            body: 'You counted every pile. The Bake Sale is open now.',
             button: backButton,
         }))
 
@@ -548,7 +548,7 @@ export function createLessonView({ store, navigate, params }) {
 
         showFinishedCard()
 
-        await narrator.say('You did it! You counted every pile. The Bakery is open now.')
+        await narrator.say('You did it! You counted every pile. The Bake Sale is open now.')
     }
 
     /* ----------------------------------------------------------------- frame */

@@ -41,7 +41,7 @@ export function createBakeryView({ params, store, navigate }) {
     })
 
     const startButton = createPrimaryButton({
-        label: 'Start baking',
+        label: 'Start',
         variant: 'green',
         onClick: () => adapter.send('game/start', { difficulty: 'easy' }),
     })
@@ -54,7 +54,7 @@ export function createBakeryView({ params, store, navigate }) {
 
     const lobby = el('div', { class: 'pc-bakery pc-stack' }, [
         el('header', {}, [
-            el('h1', {}, isJoining ? 'Joining a bakery' : 'Your bakery'),
+            el('h1', {}, isJoining ? 'Joining the Bake Sale' : 'Your Bake Sale'),
             el('p', { class: 'pc-bakery__note' },
                 'Read the code out to your friends. They type it on the menu.'),
         ]),
@@ -73,7 +73,7 @@ export function createBakeryView({ params, store, navigate }) {
     function renderLobby() {
         if (!room) return
 
-        codeLabel.textContent = room.code ? `Bakery code: ${room.code}` : ''
+        codeLabel.textContent = room.code ? `Bake sale code: ${room.code}` : ''
 
         clear(playerList)
 
@@ -96,7 +96,7 @@ export function createBakeryView({ params, store, navigate }) {
         const enough = room.players.length >= room.config.minPlayers
 
         statusLine.textContent = enough
-            ? `${room.players.length} bakers in the kitchen.`
+            ? `${room.players.length} friends at the bake sale.`
             : 'Waiting for a friend to join…'
 
         readyButton.update({ label: isReady() ? 'Wait, not yet' : 'I am ready' })
@@ -159,7 +159,7 @@ export function createBakeryView({ params, store, navigate }) {
     connect
         .then(result => {
             me = result.playerId
-            codeLabel.textContent = `Bakery code: ${result.code ?? joinCode}`
+            codeLabel.textContent = `Bake sale code: ${result.code ?? joinCode}`
             // Whether this arrives before or after the first `room/state` is a
             // transport detail, and the lobby must not read differently either
             // way — half of what it renders depends on knowing which player is

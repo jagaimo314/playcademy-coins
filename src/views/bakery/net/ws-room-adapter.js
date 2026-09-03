@@ -76,7 +76,7 @@ export function createWsRoomAdapter({ url = defaultUrl(), syncIntervalMs = 10000
                 // `error` never carries a reason in browsers, and `close`
                 // always follows it. Rejecting here is what turns a refused
                 // connection into a message the lobby can render.
-                if (status === 'connecting') reject(new Error('Could not reach the bakery.'))
+                if (status === 'connecting') reject(new Error('Could not reach the bake sale.'))
             })
         })
     }

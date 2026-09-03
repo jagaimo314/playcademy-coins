@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "type": "module",
-  "description": "Teaching K-2 kids to sum coins: a lesson and a multiplayer bakery game.",
+  "description": "Teaching K-2 kids to sum coins: a lesson and a multiplayer bake sale game.",
   "scripts": {
     "dev": "vite",
     "build": "vite build",
