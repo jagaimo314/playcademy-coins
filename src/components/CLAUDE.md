@@ -31,6 +31,14 @@ components report back through callbacks passed in (`onClick`, `onSubmit`, `onRe
 | `SkipCountGrid.js` | `Grid` + cell labels, interval indicators, the reveal animation, cell highlights, and the student's answer star. |
 | `SkipCountCurrencyGrid.js` | `SkipCountGrid` in cents, with a ghosted real coin as each indicator. |
 
+**A mixed pile is rolled once and spent twice.** Coins land heads or tails on their own —
+`randomFaces(count)` in `coin/coin-faces.js` — and the *same* array goes to both
+`createCoinPile({ displayTypes })` and `new SkipCountCurrencyGrid({ displayTypes })`. The
+chart is a replay of the pile: the coin arriving at 15¢ is the third coin of the pile, and
+one that changed sides on the way reads as a different coin rather than as the one being
+counted. Roll them at the call site (the Lesson does, per problem); do not let either
+component roll its own.
+
 **Where the conveyor pair sits.** An early draft of `docs/bakery-backend-plan.md` sketched the
 belt and the tray under `views/bakery/game/`. They are here instead — view-agnostic SVG that
 reads no state and knows nothing about a room — and the plan now says so. Only the Bakery uses
@@ -174,7 +182,7 @@ Non-negotiable, and cheap if done as you go:
 
 Open the manual test pages with `npm run dev` (they are not routes; nothing imports them):
 
-- `/src/components/test/skipCountGrid.html` — all three grids, plus 22 self-checks that
+- `/src/components/test/skipCountGrid.html` — all three grids, plus 24 self-checks that
   must report 0 failures. Any change to grid geometry or cell numbering goes through here.
 - `/src/components/test/coins.html` — every denomination on every face, plus a live flip.
 - `/src/components/test/conveyorBelt.html` — a 1200-unit belt of 10 slots carrying trays, the

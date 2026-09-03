@@ -1,6 +1,7 @@
 import { el } from '../../lib/dom.js'
 import { CENT, describeCount, formatCents, skipCountSequence } from '../../lib/money.js'
 import { createAnswerInput } from '../../components/answer-input/answer-input.js'
+import { randomFaces } from '../../components/coin/coin-faces.js'
 import { createCoinPile } from '../../components/coin-pile/coin-pile.js'
 import { createNarrator } from '../../components/narrator/narrator.js'
 import { createProgressBar } from '../../components/progress-bar/progress-bar.js'
@@ -309,11 +310,18 @@ export function createLessonView({ store, navigate, params }) {
         pile?.destroy()
         grid?.destroy()
 
+        // Rolled once and spent twice. The chart replays the pile coin by coin,
+        // so the nickel that lands on 15¢ has to be the third nickel of the pile
+        // the same way up — otherwise the replay reads as a different set of
+        // coins rather than as the ones being counted.
+        const faces = randomFaces(next.count)
+
         pile = createCoinPile({
             denomination: next.denomination,
             count: next.count,
             columns: PILE_COLUMNS,
             gap: PILE_GAP,
+            displayTypes: faces,
             onCoinTap: interactive ? index => onCoinTap?.(index) : null,
         })
 
@@ -323,6 +331,7 @@ export function createLessonView({ store, navigate, params }) {
             cellSize: GRID_CELL,
             denomination: next.denomination,
             numCoins: next.count,
+            displayTypes: faces,
             onReveal: event => onGridReveal?.(event),
         })
 

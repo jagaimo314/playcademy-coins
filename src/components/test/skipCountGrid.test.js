@@ -8,6 +8,7 @@ import '../../styles/base.css'
 
 import { append, el } from '../../lib/dom.js'
 import { describeCount, formatCents } from '../../lib/money.js'
+import { randomFaces } from '../coin/coin-faces.js'
 import { createPrimaryButton } from '../primary-button/primary-button.js'
 import { Grid } from '../Grid.js'
 import { SkipCountGrid } from '../SkipCountGrid.js'
@@ -30,11 +31,14 @@ append(mount, [
 function currencySection() {
     const readout = el('p', { class: 'demo__readout' })
 
+    // Mixed faces, as the Lesson passes them, so a reload is a fresh set: this
+    // is where a face that does not survive the reveal shows up.
     const grid = new SkipCountCurrencyGrid({
         numRows: 10,
         numCols: 10,
         denomination: 'nickel',
         numCoins: 5,
+        displayTypes: randomFaces(5),
         onReveal: ({ count }) => showTotal(count),
     })
 
@@ -66,7 +70,7 @@ function currencySection() {
 
     return el('section', { class: 'demo pc-card pc-stack' }, [
         el('h2', {}, 'SkipCountCurrencyGrid'),
-        el('p', {}, 'A ghosted nickel lands on every 5¢. animateSkipCount() walks them 500ms apart; passing 0 reveals them all at once.'),
+        el('p', {}, 'A ghosted nickel lands on every 5¢, heads or tails as it fell — reload for a new set. animateSkipCount() walks them 500ms apart; passing 0 reveals them all at once.'),
         readout,
         el('div', { class: 'demo__row' }, [animate.el, instant.el, reset.el]),
         grid.el,
@@ -334,6 +338,21 @@ async function runChecks() {
             expect(grid.skipCells, [10, 20, 30, 40], 'skipCells'),
             expect(grid.el.querySelectorAll('.pc-currencygrid__ghost .pc-coin--dime').length, 4, 'ghost coins'),
         )
+    })
+
+    /** The faces on the chart, in counting order. */
+    const ghostFaces = grid => [...grid.el.querySelectorAll('.pc-currencygrid__ghost .pc-coin')]
+        .map(node => node.dataset.displayType)
+
+    check('displayTypes land on the indicators in counting order', () => {
+        const faces = ['Tails', 'Heads', 'Tails', 'Tails']
+        const grid = new SkipCountCurrencyGrid({ denomination: 'dime', numCoins: 4, displayTypes: faces })
+        return expect(ghostFaces(grid), faces, 'faces')
+    })
+
+    check('a coin with no face given rests on Heads', () => {
+        const grid = new SkipCountCurrencyGrid({ denomination: 'penny', numCoins: 3, displayTypes: ['Tails'] })
+        return expect(ghostFaces(grid), ['Tails', 'Heads', 'Heads'], 'faces')
     })
 
     check('an unknown denomination is rejected', () => {

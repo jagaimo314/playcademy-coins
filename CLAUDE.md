@@ -37,7 +37,7 @@ directly in dev):
 
 | Page | Covers |
 | --- | --- |
-| `/src/components/test/skipCountGrid.html` | All three grids, plus **22 self-checks that must report 0 failures**. |
+| `/src/components/test/skipCountGrid.html` | All three grids, plus **24 self-checks that must report 0 failures**. |
 | `/src/components/test/coins.html` | Every denomination on every face, plus a live flip. |
 | `/src/components/test/conveyorBelt.html` | The Bakery's belt and trays, plus **19 self-checks that must report 0 failures**. |
 

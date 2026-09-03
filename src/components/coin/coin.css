@@ -6,9 +6,11 @@
     --pc-coin-ratio: 1;
     --pc-coin-diameter: calc(var(--pc-coin-size) * var(--pc-coin-ratio));
 
-    /* The metal, and the darker relief the heads/tails artwork is drawn in. */
+    /*
+     * The metal the disc is filled with. The heads/tails artwork is line art on
+     * a transparent ground, so this is what shows through behind it.
+     */
     --pc-coin-metal: var(--pc-coin-silver);
-    --pc-coin-shade: var(--pc-coin-silver-deep);
 
     position: relative;
     display: inline-flex;
@@ -40,7 +42,6 @@ button.pc-coin { cursor: pointer; }
 .pc-coin--penny {
     --pc-coin-ratio: 0.78;
     --pc-coin-metal: var(--pc-coin-copper);
-    --pc-coin-shade: var(--pc-coin-copper-deep);
 }
 
 .pc-coin--nickel { --pc-coin-ratio: 0.87; }

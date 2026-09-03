@@ -1,16 +1,15 @@
 /**
  * The baked goods.
  *
- * These are the app's only image files, and the only place the artwork departs
- * from the hand-built-SVG rule the rest of it follows — see docs/architecture.md.
- * The departure is deliberate and it is confined to this module: the art
- * direction is being settled from supplied reference art, and re-deriving that
- * art as paths would freeze it before it is final. Swapping the set for drawn
- * SVG later is a change here and nowhere else.
+ * Raster, like the coin faces in `components/coin/coin-faces.js` — supplied art
+ * rather than paths drawn in code. The reason is the same in both places: the
+ * art direction is settled from reference artwork, and re-deriving it as paths
+ * would freeze it before it is final. Swapping the set for drawn SVG later is a
+ * change here and nowhere else.
  *
- * Scope of the exception, precisely: goods are raster and *nothing else is*.
- * The belts and trays stay SVG, the room chrome is DOM and CSS, and the coins
- * stay hand-built and shared with the Lesson.
+ * Scope, precisely: goods and coin faces are raster and *nothing else is*. The
+ * belts and trays stay SVG, drawn with `svg()`, and the room chrome is DOM and
+ * CSS.
  *
  * Pure data and pure functions, no DOM.
  */

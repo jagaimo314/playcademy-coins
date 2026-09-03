@@ -22,6 +22,13 @@ export class SkipCountCurrencyGrid extends SkipCountGrid {
         denomination = 'nickel',
         /** How many coins this grid counts. Indicators stop after this many. */
         numCoins = 5,
+        /**
+         * The face each coin lands on, by counting position. Pass the array the
+         * pile was built from: the coin arriving at 15¢ is *that* coin off the
+         * pile, and it has to be the same side up to be recognised as such.
+         * Anything missing falls back to `Heads`.
+         */
+        displayTypes = null,
         ...gridOptions
     } = {}) {
         // Throws on an unknown denomination, before any drawing happens.
@@ -35,6 +42,7 @@ export class SkipCountCurrencyGrid extends SkipCountGrid {
 
         this.denomination = denomination
         this.numCoins = numCoins
+        this.displayTypes = displayTypes
 
         if (new.target === SkipCountCurrencyGrid) this.draw()
     }
@@ -62,20 +70,21 @@ export class SkipCountCurrencyGrid extends SkipCountGrid {
 
     /**
      * A ghosted instance of the real coin component, rather than a lookalike —
-     * the coin a kid sees on the chart should be the coin they see in the pile.
-     * It rests on `Heads`, the picture side, for the same reason: reading a coin
-     * from its portrait is the skill, and the cell label already says the value.
+     * the coin a kid sees on the chart should be the coin they see in the pile,
+     * down to which way up it landed. It rests on a picture side rather than the
+     * value side: reading a coin from its face is the skill, and the cell label
+     * already says the value.
      *
      * The cell is what sizes it, through `--pc-coin-size` rather than a width:
      * a quarter then fills its cell and every smaller coin keeps its real
      * diameter against one, which is the only cue a child has for telling a dime
      * from a nickel before they can name either.
      */
-    createSkipIndicator() {
+    createSkipIndicator(cell, index) {
         const size = this.cellSize
         const instance = createCoin({
             denomination: this.denomination,
-            displayType: 'Heads',
+            displayType: this.displayTypes?.[index] ?? 'Heads',
         })
 
         this.#coins.push(instance)

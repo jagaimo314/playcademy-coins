@@ -7,7 +7,7 @@ of them sums — lives in `lib/money.js`, not here. **This folder only draws.**
 | File | What it is |
 | --- | --- |
 | `coin.js` | `createCoin()` — the component. |
-| `coin-faces.js` | The artwork. Pure SVG builders, no component knowledge. |
+| `coin-faces.js` | The artwork. Maps a face to its PNG; no component knowledge. |
 | `coin.css` | Sizing, metal, faces, captions, plus the shared `.pc-coin-row`. |
 
 ## The handle
@@ -31,13 +31,20 @@ coin.destroy()
 - **`Generic`** is the *value* side: no artwork, a plain gold disc with `5¢` as text. It
   is the abstract "a coin" token, not a particular coin, which is why it drops the metal
   colour for gold whatever the denomination.
-- **`Heads` / `Tails`** are the *picture* sides: hand-drawn SVG filling the disc, in the
-  coin's own metal. The value text is hidden.
+- **`Heads` / `Tails`** are the *picture* sides: a PNG of the real face filling the disc,
+  line art on a transparent ground so the coin's own metal still shows through. The value
+  text is hidden.
 
-The pairing matters pedagogically. The Lesson rests its piles on `Heads` and flips them to
-`Generic` and back to say "remember, five cents" — the value is *revealed*, then gone
-again, because reading a coin from its picture is the skill being taught. Never put value
-text on the artwork.
+The pairing matters pedagogically. The Lesson rests its piles on a picture side and flips
+them to `Generic` and back to say "remember, five cents" — the value is *revealed*, then
+gone again, because reading a coin from its picture is the skill being taught. Never put
+value text on the artwork.
+
+**Which picture side is a coin toss.** `randomFaces(count)` returns a face per coin, and
+the Lesson rolls one array per problem for the pile and the chart together. Coins out of a
+pocket land both ways, and a pile that is all heads teaches that a nickel is *the
+portrait* rather than the coin. See `components/CLAUDE.md` for why the array must be
+shared rather than rolled twice.
 
 `flipCoin()` notes:
 
@@ -88,23 +95,29 @@ and printing it on the coin as well is the confusion the chart is there to clear
 ## Changing things
 
 **A new denomination** touches three places: `COINS` in `lib/money.js` (the source of
-truth), a `--pc-coin-ratio` / metal block in `coin.css`, and `HEADS` + `TAILS` entries in
-`coin-faces.js`. Miss the last and `createCoinArt` returns `null`, which renders as a bare
-metal disc rather than throwing.
+truth), a `--pc-coin-ratio` / metal block in `coin.css`, and a `Heads` + `Tails` pair in
+`COIN_ART` in `coin-faces.js`. Miss the last and `createCoinArt` returns `null`, which
+renders as a bare metal disc rather than throwing.
 
-**New artwork** is authored in a `0 0 100 100` field inscribed in the disc, built with the
-`path`/`line`/`circle`/`ellipse`/`rect`/`group`/`mirrored` helpers at the top of
-`coin-faces.js`. Take colour from the `--pc-coin-*` custom properties — never a literal —
-so a penny's art is copper and a dime's is silver from one drawing. Portraits start from
-the shared `PROFILE` bust and add the one feature a child can name.
+**New artwork** goes in `src/assets/coins/` as `<denomination>-<heads|tails>.png`, imported
+by `coin-faces.js` so Vite fingerprints it — never `public/`. Match the set that is there:
+square, the coin inscribed in the full box with its own rim, and **line art in one ink on a
+transparent ground**. The transparency is what makes a penny copper and a dime silver from
+one file, since the metal is the disc's CSS background showing through; a file with a
+filled background would paint over it and every coin would look the same. The art is
+delivered through an `<image>` inside a `0 0 100 100` `<svg>` rather than an `<img>` so it
+fits whatever box it is handed — which is how `SkipCountCurrencyGrid` shrinks a coin into a
+chart cell.
 
 ## Who uses it
 
 - `components/coin-pile` — rows of coins, plus the boundary/flip gestures the Lesson needs.
   Each coin sits in a slot so the counted-coin mark can be a rounded rect outside the disc;
-  the pile still passes `selected` down for the accessible state.
-- `components/SkipCountCurrencyGrid` — a ghosted `Heads` coin per interval, inside a
-  `foreignObject` that sets `--pc-coin-size` to the cell size. A quarter therefore fills
-  its cell and a dime does not, which is the whole point of drawing real coins there.
+  the pile still passes `selected` down for the accessible state. Its `peek` reads each
+  coin's resting face off the instance, so a mixed pile comes home the way it went out.
+- `components/SkipCountCurrencyGrid` — a ghosted coin per interval, on the face that coin
+  landed on in the pile, inside a `foreignObject` that sets `--pc-coin-size` to the cell
+  size. A quarter therefore fills its cell and a dime does not, which is the whole point of
+  drawing real coins there.
 - `src/components/test/coins.html` — every denomination × every face, plus a live flip.
   Open it after any change here.

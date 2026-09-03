@@ -34,6 +34,13 @@ export function createCoinPile({
     gap = 5,
     /** The face the pile rests on. `'Generic'` is the value side. */
     displayType = 'Heads',
+    /**
+     * A face per coin, overriding `displayType` where it has one — this is how
+     * a mixed pile is asked for, with `randomFaces(count)` from `coin-faces.js`.
+     * The caller rolls them rather than the pile, because the chart the pile is
+     * counted onto has to be given the same array.
+     */
+    displayTypes = null,
     /** Called with a coin's index when it is tapped. Omit for a pile to look at. */
     onCoinTap = null,
 }) {
@@ -41,7 +48,7 @@ export function createCoinPile({
 
     const coins = Array.from({ length: count }, (_, index) => createCoin({
         denomination,
-        displayType,
+        displayType: displayTypes?.[index] ?? displayType,
         onClick: interactive ? () => onCoinTap(index) : null,
     }))
 
@@ -94,16 +101,21 @@ export function createCoinPile({
         box.hidden = true
     }
 
-    /** Turn `instances` over to `face`, hold, and turn them back. */
+    /**
+     * Turn `instances` over to `face`, hold, and turn each back to the face it
+     * was resting on — read per coin, not once for the pile, because a mixed
+     * pile has no single face to come home to.
+     */
     async function peek(instances, face) {
-        const resting = instances[0]?.displayType
+        const resting = instances.map(instance => instance.displayType)
 
-        // A pile already showing that face has nothing to reveal by turning.
-        if (!resting || resting === face) return
+        // Nothing to reveal by turning a coin that already shows that face; an
+        // empty selection lands here too.
+        if (resting.every(from => from === face)) return
 
         await Promise.all(instances.map(instance => instance.flipCoin(face)))
         await delay(PEEK_MS)
-        await Promise.all(instances.map(instance => instance.flipCoin(resting)))
+        await Promise.all(instances.map((instance, index) => instance.flipCoin(resting[index])))
     }
 
     return {
