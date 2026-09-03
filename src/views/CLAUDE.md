@@ -49,8 +49,8 @@ student has an answer marked right:
 
 | Mode | What happens |
 | --- | --- |
-| `instruction` | The lesson demonstrates on `INSTRUCTION_PROBLEM`: narrates, boxes the pile, flips the coins to their value side, counts them one by one, walks the chart, fills the answer in. The student presses Check Answer. |
-| `guided` | The same shape with the doing handed over. Each beat waits for the taps it asked for before the next line is spoken. |
+| `instruction` | The lesson demonstrates on `INSTRUCTION_PROBLEM`: narrates, boxes the pile, flips the coins to their value side, counts them one by one, walks the chart calling out the running total as each coin lands — "5", "10", "15" — then fills the answer in. The student presses Check Answer. |
+| `guided` | The same shape with the doing handed over. The coins are tapped one at a time to identify them and to count them, and each of those beats waits for its taps. The chart is **not** tapped: skip counting it is the skill being practised, so the student reads it and types where they landed. |
 | `freeplay` | `FREEPLAY_PROBLEMS` — ten piles, one at a time, no scaffolding. Finishing them sets `lesson.completed`. |
 
 | File | Holds |
@@ -66,6 +66,12 @@ A script beat is `{ id, say }` where `say` is a function of the problem. The ani
 runs is looked up by `id` in `INSTRUCTION_MOVES` / `GUIDED_MOVES` in the view. Edit wording
 without touching the view; edit choreography without touching the copy.
 
+**A beat may omit `say` entirely**, which means "the move does the talking". Instruction's
+`skip-count-callout` is the one that does: it says a number per coin as each lands rather
+than one sentence over the whole run, so there is no line for the script to hold and
+`playBeat` skips the speech and the dwell and waits only on the move. Do not give such a
+beat a placeholder line — an empty caption would blank the one before it.
+
 Narration lines are written *against the problem* (`plural(p)`, `p.step`, `p.expected`) and
 never typed out, so swapping which pile the lesson opens on cannot leave it saying
 "nickels" over a heap of dimes. Values are spelled `5 cents`, not `5¢` — this text is read
@@ -78,7 +84,11 @@ sentence is describing — and moves on only when both are done. Two floors and 
 keep it honest, and all four exist because something really does go wrong without them:
 
 - A **dwell floor** per line, so a muted or unsupported voice does not flick the captions
-  past unread. Speech alone cannot pace the beats.
+  past unread. Speech alone cannot pace the beats. `SKIP_CALLOUT_MS` is the same idea one
+  level down, per *coin* rather than per line: the chart's callout waits for the slower of
+  the voice and 1.5s, so a slow voice pushes the next coin out rather than being cancelled
+  mid-word by it. Every `narrator.say()` cancels the utterance before it, which is what
+  makes that a floor and not a cadence.
 - A **speech ceiling** (`SPEECH_CAP_MS`), because a voice that never fires `end` would
   stall the lesson forever.
 - Script animations awaited through `animationSettled()`, never `animation.finished`.
@@ -92,18 +102,31 @@ Two rules when editing this flow:
    torn down rather than finishing.
 2. **Open a gate inside the beat that enables the control, not after it.** Enable Check
    Answer and *then* create the gate and a fast tap lands in the gap and is lost forever.
+   The beat that *waits* on a gate need not be the beat that opened it — guided's
+   `skip-count` opens the field and arms the gate, and the `answer` beat after it awaits
+   `armedAnswer`, so the reminder to press Check Answer is spoken over the typing instead
+   of after it. Do not "tidy" that by moving the arming down a beat.
 
 ### The frame
 
-One **1280×720 design box**, laid out once and then scaled to the display — a hundred-chart
+One **1280×692 design box**, laid out once and then scaled to the display — a hundred-chart
 whose cells drift with the viewport is no use for pointing at, and a layout that rearranges
 itself per size is a different lesson at every size. Every offset in `lesson.css` is a
 design pixel measured from that box; the window only decides how big a design pixel is.
 
-**The vertical arithmetic is the design, and it has to add up**: 20 of toolbar, 10 of gap,
-680 of chart (ten cells of 68), 10 of dead space — 720, which against 1280 across is 16:9.
-`DESIGN_HEIGHT` is derived from those constants rather than typed, so the sum cannot drift;
-a cell size other than 68 trades the aspect ratio for something else.
+**The vertical arithmetic is the design, and it has to add up**: 20 of toolbar, 1 of border,
+15 of inset, 640 of chart (ten cells of 64), 15 of inset, 1 of border — 692. `DESIGN_HEIGHT`
+is derived from those constants rather than typed, so the sum cannot drift. The chart is what
+the height is *for*, so everything round it is what gives way when they disagree — which is
+why the box came off 16:9 when the border went to a hairline, and why the way back to 16:9 is
+a taller toolbar rather than a bigger cell.
+
+**`PANEL_TOP` and `CONTENT_TOP` are different lines, and the gap between them is the point.**
+The white panel starts one border below the bar; the chart's cells and the narrator's band
+both start `GRID_INSET` lower, so the chart keeps the same 15 from the frame above it as it
+does to the right and below. Putting the panel on `CONTENT_TOP` instead would paint that gap
+in the border's colour and give the frame a 16px top edge against a 1px hairline everywhere
+else.
 
 Load-bearing, all of it:
 
@@ -116,9 +139,13 @@ Load-bearing, all of it:
   scaled footprint so centring and scrolling have something to work with, and it gets
   `margin: auto`: `justify-content: center` would push the left edge somewhere the
   scrollbar cannot reach on a small display.
-- The chart is placed by its **cells**, not its box. The SVG pads itself so its border
-  stroke is not clipped, and `loadProblem()` takes that padding back off the offset — which
-  is what puts the first row of cells on `CONTENT_TOP` and the last on 710.
+- The chart is placed by its **cells**, not its box, and `GRID_INSET` is measured to the
+  cells too. The SVG pads itself by `PAD` so its border stroke is not clipped, and
+  `loadProblem()` takes that padding back off *both* offsets — `--pc-lesson-chart-top` and
+  `--pc-lesson-chart-right` — which is what makes the gap above the chart and the gap beside
+  it the same gap, and puts the first row of cells on `CONTENT_TOP` and the last on 676. The
+  work column measures against `--pc-lesson-chart-right` for the same reason: the inset the
+  design asks for is 2px short of where the chart's box actually starts.
 - The dark blue border is one background, the frame's own, with the white
   `.pc-lesson__panel` inset over it. The panel is **decorative** — everything positions
   against the design box, not against the panel — which is what lets the toolbar's colour
@@ -150,8 +177,11 @@ and draws what it is told back. It computes no score, no position and no outcome
 *value* never crosses the wire — `hand/dealt` carries coin ids and the sum stays on the
 server, because that sum is the exercise.
 
-`game/` holds the floor: a **1280×720 design box**, the same one the Lesson uses, scaled to
-the display by a `ResizeObserver` — two screens in one app should not have two design boxes.
+`game/` holds the floor: a **1280×720 design box**, scaled to the display by a
+`ResizeObserver`. It was the Lesson's box too until the Lesson's frame was reworked — a
+hairline border, a 64 cell and a gap round the chart — and came out at 692. The two are the
+same 1280 across and 28 apart down, and the intent is still one box per app rather than one
+per screen, so move them together.
 Its vertical budget is *derived* from named band constants rather than typed, so the sum
 cannot drift: toolbar, belt bay (three lanes at a 124 pitch), counter, panels. The belt run
 is a fixed width and the server's `slotCount` divides it, which is why `slotPitchPx` off the

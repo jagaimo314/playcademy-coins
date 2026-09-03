@@ -47,10 +47,10 @@ export const PROBLEMS = [
     problem({ id: 'p4', denomination: 'quarter', count: 1, kc: KC.QUARTERS_BY_25 }),
     problem({ id: 'p5', denomination: 'dime', count: 5, kc: KC.DIMES_BY_10 }),
     problem({ id: 'p6', denomination: 'quarter', count: 2, kc: KC.QUARTERS_BY_25 }),
-    problem({ id: 'p7', denomination: 'penny', count: 5, kc: KC.PENNIES_BY_1 }),
+    problem({ id: 'p7', denomination: 'penny', count: 7, kc: KC.PENNIES_BY_1 }),
     problem({ id: 'p8', denomination: 'dime', count: 10, kc: KC.DIMES_BY_10 }),
-    problem({ id: 'p9', denomination: 'quarter', count: 3, kc: KC.QUARTERS_BY_25 }),
-    problem({ id: 'p10', denomination: 'nickel', count: 15, kc: KC.NICKELS_BY_5 }),
+    problem({ id: 'p9', denomination: 'nickel', count: 15, kc: KC.NICKELS_BY_5 }),
+    problem({ id: 'p10', denomination: 'quarter', count: 3, kc: KC.QUARTERS_BY_25 }),
     problem({ id: 'p11', denomination: 'dime', count: 8, kc: KC.DIMES_BY_10 }),
     problem({ id: 'p12', denomination: 'nickel', count: 7, kc: KC.NICKELS_BY_5 }),
 ]
@@ -106,6 +106,13 @@ export const INSTRUCTION_SCRIPT = [
         id: 'skip-count',
         say: p => `Now let's count by ${p.step}, ${p.count} times.`,
     },
+    // No line of its own: the move narrates itself, one number per coin as it
+    // lands — "5", "10", "15" — which is the count being said out loud rather
+    // than a sentence about it. A beat with no `say` is the view's signal to
+    // run the move and leave the talking to it.
+    {
+        id: 'skip-count-callout',
+    },
     {
         id: 'total',
         say: p => `${describeCount(p.count, p.denomination)} are worth ${p.expected} cents.`,
@@ -129,12 +136,13 @@ export const GUIDED_SCRIPT = [
     },
     {
         id: 'skip-count',
-        say: p => 'Use the graph on the right and skip count, '
-            + `pointing at the place each ${singular(p)} lands.`,
+        say: p => `Now skip count by pointing where each ${singular(p)} lands. `
+            + 'Take the number you ended on and type it in the box.',
     },
+    // Spoken over the typing rather than before it, which is why this one is a
+    // reminder and not an instruction: the field opened on the line above.
     {
         id: 'answer',
-        say: p => `Now type how much ${describeCount(p.count, p.denomination)} are worth, `
-            + 'and check your answer.',
+        say: () => 'Remember to Check Answer when you are done.',
     },
 ]

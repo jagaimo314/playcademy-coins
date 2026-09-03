@@ -145,7 +145,7 @@ visible, label every control, and keep hit targets at `--pc-tap-min`.
 - **`el()`'s `style` prop supports `--custom` properties** via `setProperty`.
   `Object.assign(node.style, …)` drops them silently — that bug cost the grid its label
   scaling once already.
-- The Lesson is laid out against a **1280×720 design box** and scaled to the display by a
+- The Lesson is laid out against a **1280×692 design box** and scaled to the display by a
   `ResizeObserver`; its stage is `position: fixed`, which is how it escapes `#app`'s
   centred 60rem column. Every offset inside is a design pixel measured from that box, and
   the box's height is derived from the toolbar / gap / chart / dead-space constants rather

@@ -17,8 +17,8 @@ import './lesson.css'
 /**
  * The skip-count-by-like-denomination lesson.
  *
- * The screen is one 16:9 frame, laid out once against 1280x720 design pixels
- * and then scaled to fit the display — a hundred-chart whose cells drift with
+ * The screen is one frame, laid out once against 1280x692 design pixels and
+ * then scaled to fit the display — a hundred-chart whose cells drift with
  * the viewport is no use for pointing at, and a layout that rearranges itself
  * per size is a different lesson at every size. Everything inside is positioned
  * against that box: chrome in a bar along the top, the narrator below it on the
@@ -32,8 +32,9 @@ import './lesson.css'
  * answer marked right:
  *
  *   instruction — the lesson demonstrates. It narrates, boxes the pile, turns
- *                 the coins over, counts them, walks the chart, and fills the
- *                 answer in. The student presses Check Answer.
+ *                 the coins over, counts them, walks the chart calling out the
+ *                 running total a coin at a time, and fills the answer in. The
+ *                 student presses Check Answer.
  *   guided      — the same shape with the doing handed over. Each beat waits
  *                 for the taps it asked for before the next line is spoken.
  *   freeplay    — ten piles, one at a time, no scaffolding.
@@ -46,28 +47,47 @@ import './lesson.css'
 /** Design width. Every number in this file and in `lesson.css` is one of these. */
 const DESIGN_WIDTH = 1280
 
-/** The chrome bar across the top, and the dark blue it leaves round the rest. */
-const TOOLBAR_HEIGHT = 20
-const BORDER = 10
-
 /**
- * Where the lesson proper starts: one border below the bar. The narrator's band
- * and the chart's first row of cells both begin on this line.
+ * The chrome bar across the top, and the dark blue it leaves round the rest.
+ * The border is a hairline: the frame is meant to read as an edge rather than
+ * as a mount, and the toolbar above it already carries the same colour.
  */
-const CONTENT_TOP = TOOLBAR_HEIGHT + BORDER
+const TOOLBAR_HEIGHT = 20
+const BORDER = 1
+
+/** Where the white panel starts: one border below the bar. */
+const PANEL_TOP = TOOLBAR_HEIGHT + BORDER
 
 /** The chart, and the size of one cell. */
 const GRID_ROWS = 10
 const GRID_COLS = 10
-const GRID_CELL = 68
+const GRID_CELL = 64
+
+/**
+ * Gap between the chart's cells and the frame on the three sides it touches —
+ * above, right, below. Measured to the *cells*, not to the chart's box: the SVG
+ * pads itself by a couple of pixels so its border stroke is not clipped, and
+ * `loadProblem()` takes that padding back off both offsets, so the gap is the
+ * same 15 on every side rather than 15 down one and 17 across another.
+ */
+const GRID_INSET = 15
+
+/**
+ * Where the lesson proper starts: the chart's own inset below the panel's top
+ * edge. The narrator's band and the chart's first row of cells both begin on
+ * this line — the student's eye moves between a line being spoken and the cell
+ * it is about, so the two start level.
+ */
+const CONTENT_TOP = PANEL_TOP + GRID_INSET
 
 /**
  * The design height, derived rather than typed so the arithmetic cannot drift:
- * 20 of bar, 10 of gap, 680 of chart, 10 of dead space underneath — 720, which
- * against 1280 across is 16:9. 68 is the cell size that makes that true, so
- * changing it trades the aspect ratio for whatever it changes to.
+ * 20 of bar, 1 of border, 15 of inset, 640 of chart, 15 of inset, 1 of border —
+ * 692. The chart is what the height is for, so everything round it is what
+ * gives way when they disagree; 1280 x 692 is a little wider than 16:9 as a
+ * result, and the way back to 16:9 is a taller bar rather than a bigger cell.
  */
-const DESIGN_HEIGHT = CONTENT_TOP + GRID_ROWS * GRID_CELL + BORDER
+const DESIGN_HEIGHT = CONTENT_TOP + GRID_ROWS * GRID_CELL + GRID_INSET + BORDER
 
 /**
  * A quarter's diameter, which is the chart's cell size on purpose: a coin
@@ -76,9 +96,6 @@ const DESIGN_HEIGHT = CONTENT_TOP + GRID_ROWS * GRID_CELL + BORDER
  * `coin.css` scale off this value, so a dime never grows to a quarter's width.
  */
 const COIN_SIZE = GRID_CELL
-
-/** Gap between the chart's right edge and the design box's. */
-const GRID_INSET = 15
 
 /** Where the pile starts, from the design box's top. The narrator has the rest. */
 const PILE_TOP = 200
@@ -95,8 +112,24 @@ const PILE_GAP = 15
 const MIN_FRAME_HEIGHT = 400
 const MIN_SCALE = MIN_FRAME_HEIGHT / DESIGN_HEIGHT
 
-/** Milliseconds between each coin landing on the chart. */
+/**
+ * Milliseconds between each coin landing on the chart. This is the replay that
+ * runs when an answer is checked — a confirmation, not a lesson, so it moves at
+ * a pace that does not make the student sit through the count again.
+ */
 const SKIP_DELAY = 550
+
+/**
+ * How long each coin holds the chart while the lesson calls out the running
+ * total: "5", "10", "15". Slower than `SKIP_DELAY` because the student is
+ * meant to say the numbers along with it, and a count that outruns the voice
+ * teaches the rhythm of nothing.
+ *
+ * A floor rather than a cadence — see `countOnChartForThem()`. Note it is paid
+ * per coin, so a pile much bigger than the instruction problem's three would
+ * make this beat long enough to need rethinking rather than retiming.
+ */
+const SKIP_CALLOUT_MS = 1500
 
 /** How long each coin holds its boundary while the pile is being counted. */
 const COUNT_STEP_MS = 700
@@ -179,6 +212,14 @@ export function createLessonView({ store, navigate, params }) {
 
     /** Set while a beat is waiting for an answer to come back right. */
     let answerGate = null
+
+    /**
+     * The last answer gate's promise, kept so a beat can wait on a gate an
+     * *earlier* beat opened. Guided needs that: the line that asks the student
+     * to type has to be the line that opens the field, and the reminder to
+     * press Check Answer comes after it and is spoken over the typing.
+     */
+    let armedAnswer = null
 
     /* ------------------------------------------------------------- the board */
 
@@ -294,10 +335,11 @@ export function createLessonView({ store, navigate, params }) {
 
         // The chart is placed by its cells, not by its box. The SVG carries a
         // little padding so its border stroke is not clipped, and the design
-        // puts the first *cell* on CONTENT_TOP — so the padding comes off the
-        // offset rather than pushing every row of the chart down by it.
+        // measures GRID_INSET to the *cells* — so the padding comes off both
+        // offsets rather than pushing the chart down and left by it.
         const pad = (Number(grid.el.getAttribute('height')) - grid.height) / 2
         frame.style.setProperty('--pc-lesson-chart-top', `${CONTENT_TOP - pad}px`)
+        frame.style.setProperty('--pc-lesson-chart-right', `${GRID_INSET - pad}px`)
 
         answer.clear()
         answer.update({ disabled: true })
@@ -322,8 +364,9 @@ export function createLessonView({ store, navigate, params }) {
     function awaitCorrectAnswer() {
         const gate = openGate()
         answerGate = gate
+        armedAnswer = gate.done
 
-        return gate.done
+        return armedAnswer
     }
 
     /**
@@ -332,7 +375,17 @@ export function createLessonView({ store, navigate, params }) {
      * sentence is describing.
      */
     async function playBeat(beat, moves) {
-        const line = beat.say(problem)
+        const line = beat.say?.(problem)
+
+        // A beat with no line of its own narrates from inside its move, a line
+        // per step rather than one sentence over the whole run. There is no
+        // sentence to pace against and no caption to hold, so the move is the
+        // only thing to wait for.
+        if (!line) {
+            await moves[beat.id]?.()
+
+            return !cancelled
+        }
 
         await Promise.all([
             Promise.race([narrator.say(line), delay(SPEECH_CAP_MS)]),
@@ -365,6 +418,64 @@ export function createLessonView({ store, navigate, params }) {
         }
     }
 
+    /**
+     * Walk the chart a coin at a time, calling out the running total as each
+     * one lands: "5", "10", "15".
+     *
+     * Driven a step at a time through `revealNext()` rather than played by
+     * `animateSkipCount()`, so the coin landing and the number said over it are
+     * one statement and cannot drift apart — and so the pause between them is
+     * this view's constant rather than a coincidence between a grid timer and a
+     * narration timer.
+     *
+     * The pause is a **floor**: `Promise.all` waits for the slower of the voice
+     * and the delay, so a voice that takes longer than `SKIP_CALLOUT_MS` pushes
+     * the next coin out instead of being cut off mid-word by it. Every `say()`
+     * cancels the utterance before it, which is what that would otherwise do.
+     */
+    async function countOnChartForThem() {
+        grid.resetSkipCount()
+
+        // Wipe the ordinals off the pile: the same coins are about to be walked
+        // a second time, and what they carried the first time round is not what
+        // they stand for now.
+        pile.reset()
+
+        // The running total is read off the chart, not printed on the coin. Two
+        // numbers on one coin — the ordinal it just had and the total it now
+        // stands for — is the exact confusion skip-counting is meant to clear
+        // up, so the coin only says "counted".
+        onGridReveal = ({ cell, index }) => {
+            grid.highlightCell(cell)
+            pile.markCoin(index, { selected: true })
+        }
+
+        try {
+            for (;;) {
+                // On a currency grid the cell *is* the running total in cents,
+                // so the number to say comes off the reveal itself rather than
+                // out of a second list that could fall out of step with it.
+                const cell = grid.revealNext()
+
+                // Out of chart: a pile with more coins than the chart has room
+                // for has nothing left to land on and no number to say over it.
+                if (cell === null) return
+
+                await Promise.all([
+                    Promise.race([narrator.say(String(cell)), delay(SPEECH_CAP_MS)]),
+                    delay(SKIP_CALLOUT_MS),
+                ])
+
+                if (cancelled) return
+            }
+        } finally {
+            // In a `finally` because the loop has three ways out. Left set, the
+            // hook would still be marking pile coins when `check()` replays the
+            // same count against a pile that has moved on.
+            onGridReveal = null
+        }
+    }
+
     const INSTRUCTION_MOVES = {
         identify: async () => {
             await pile.revealBox()
@@ -374,24 +485,7 @@ export function createLessonView({ store, navigate, params }) {
 
         'count-coins': () => countPileForThem(),
 
-        'skip-count': async () => {
-            // Wipe the ordinals off the pile: the same coins are about to be
-            // walked a second time, and what they carried the first time round
-            // is not what they stand for now.
-            pile.reset()
-
-            // The running total is read off the chart, not printed on the coin.
-            // Two numbers on one coin — the ordinal it just had and the total it
-            // now stands for — is the exact confusion skip-counting is meant to
-            // clear up, so the coin only says "counted".
-            onGridReveal = ({ cell, index }) => {
-                grid.highlightCell(cell)
-                pile.markCoin(index, { selected: true })
-            }
-
-            await grid.animateSkipCount(SKIP_DELAY)
-            onGridReveal = null
-        },
+        'skip-count-callout': () => countOnChartForThem(),
 
         total: () => { answer.setValue(problem.expected) },
 
@@ -446,24 +540,30 @@ export function createLessonView({ store, navigate, params }) {
 
         'count-coins': () => tapEveryCoin(alreadyTapped => String(alreadyTapped + 1)),
 
-        // The same gesture, one level up: each tap now lands a coin on the
-        // chart. The running total lives there and only there — the coin says it
-        // has been counted and nothing more.
-        'skip-count': () => tapEveryCoin(() => {
-            const cell = grid.revealNext()
-            if (cell === null) return false
-
-            grid.highlightCell(cell)
-            return null
-        }),
-
-        answer: () => {
+        // Nothing to tap here. Skip counting the chart is the skill being
+        // practised, so the student does it by eye and by finger and types
+        // where they landed — landing the coins for them, a tap at a time,
+        // would be doing the counting on their behalf.
+        'skip-count': () => {
             onCoinTap = null
+
+            // The ordinals from the beat before are not what these coins stand
+            // for now, and a pile still labelled 1 to 4 invites the answer 4.
+            pile.reset()
+
             answer.update({ disabled: false })
             answer.focus()
 
-            return awaitCorrectAnswer()
+            // Armed here rather than returned: this is the beat that opens the
+            // field, so it is the beat that owns the gate, but the reminder on
+            // the next line has to be spoken while the student is typing
+            // rather than after they have finished. The beat below waits.
+            awaitCorrectAnswer()
         },
+
+        // Already answered by the time this line lands? Then the gate has been
+        // settled and the reminder simply reads out and the phase ends.
+        answer: () => armedAnswer ?? awaitCorrectAnswer(),
     }
 
     function runGuided() {
@@ -634,8 +734,8 @@ export function createLessonView({ store, navigate, params }) {
             '--pc-lesson-height': `${DESIGN_HEIGHT}px`,
             '--pc-lesson-toolbar-height': `${TOOLBAR_HEIGHT}px`,
             '--pc-lesson-border': `${BORDER}px`,
+            '--pc-lesson-panel-top': `${PANEL_TOP}px`,
             '--pc-lesson-content-top': `${CONTENT_TOP}px`,
-            '--pc-lesson-grid-inset': `${GRID_INSET}px`,
             '--pc-lesson-pile-top': `${PILE_TOP}px`,
             '--pc-coin-size': `${COIN_SIZE}px`,
         },

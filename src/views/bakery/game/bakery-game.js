@@ -30,8 +30,9 @@ import './bakery-game.css'
  * A fixed frame, like the Lesson's, so the geometry is identical on every
  * display. A belt that was 8 slots wide on a laptop and 8 slots narrow on a
  * tablet would make "which tray did you tap" a different question per device.
- * 1280x720 is the Lesson's box as well: two screens in one app should not have
- * two design boxes.
+ * The Lesson's box is the same 1280 across and 28 shorter — it came off 720
+ * when its frame was reworked round a 64 cell. Two screens in one app should
+ * not have two design boxes, so keep them together when either one moves.
  *
  * Every band below is a named constant and the height is *derived* from them
  * rather than typed. The sum has to come to 720 and has to keep coming to 720,

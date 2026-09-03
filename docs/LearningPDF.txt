@@ -1,0 +1,17 @@
+Lesson flow:
+This lesson is designed to have the teachers skip count by the denomination of a coin with the intent of re-enforcing the values attributed to each coin denomination as well as introducing the strategy to count by denominations before summing up the totals to arrive at a final answer.
+
+The Instruction mode takes the user step by step:
+1) Introduce the task
+2) Focus the student on the worth of the coin
+3) Then focus the student on the number of coins
+4) Apply these two concepts to the skip count grid to arrive at a worth for the set of like-denomination coins.
+
+Additionally the lesson sequence is setup to bridge the skip counting for quarters by preceding it with a count from the composite set of other coins (e.g. 5 nickels are 25 cents, 1 quarter is 25 cents. 5 dimes are 50 cents, 2 quarters are 50 cents)
+
+
+Remediation:
+1) The student may simply count the number of coins rather than summing the worth of the coins. Four nickels is counted as 4 cents
+2) The student may misattribute the worth of a coin: Four nickels are counted as 40 cents (misattributed a dime's worth to a nickel)
+3) The student may have miscounted the number of coins: Four nickels are counted 3 (or 5 times) 
+4) The student may have failed to transfer the value from the skip count grid to the text input (i.e they mistyped or got distracted between steps).
