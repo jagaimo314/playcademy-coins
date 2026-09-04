@@ -25,7 +25,7 @@ export function createHomeView({ store, navigate }) {
     function syncBakeryGate(completed) {
         startBakery.update({
             disabled: !completed,
-            disabledReason: completed ? null : 'Finish the Lesson first to open your own bake sale.',
+            disabledReason: completed ? null : 'Finish the Lesson first to go to the bake sale.',
         })
     }
 
@@ -117,7 +117,7 @@ export function createHomeView({ store, navigate }) {
             el('p', { class: 'pc-home__eyebrow' }, 'Playcademy'),
             el('h1', {}, 'Coin Sums'),
             el('p', { class: 'pc-home__subtitle' },
-                'Learn to count coins, then run a bake sale with your friends.'),
+                'Learn to count coins, then go to a bake sale with your friends.'),
         ]),
 
         knowledgeGraph,

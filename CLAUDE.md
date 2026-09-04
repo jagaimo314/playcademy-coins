@@ -108,7 +108,9 @@ These are requirements, not preferences:
   Detection only; remediation is out of scope. `views/lesson/diagnostics.js` does the
   classifying, and the Lesson says the diagnosis back to the student for the three mistakes
   that leave a signature in the typed number, with a **Retry** under it that clears the
-  board. What is still unwired is the *report*: `buildReport()` and the per-attempt record
+  board. Pressing it is the only way on — the field locks on a wrong answer, because that
+  answer is still staked on the chart and a second one typed over it would be read against
+  the first. What is still unwired is the *report*: `buildReport()` and the per-attempt record
   the summary screen and `lesson.report` are meant to carry.
 - **The Bakery unlocks when the Lesson is complete**, and the gate is real: the route guard
   refuses to host a room with the flag unset. Joining someone else's room by code is

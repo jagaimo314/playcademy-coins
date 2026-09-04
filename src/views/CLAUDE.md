@@ -53,7 +53,7 @@ student has an answer marked right:
 | --- | --- |
 | `instruction` | The lesson demonstrates on `INSTRUCTION_PROBLEM`: narrates, boxes the pile, flips the coins to their value side, counts them one by one, walks the chart calling out the running total as each coin lands — "5", "10", "15" — then fills the answer in. The student presses Check Answer. |
 | `guided` | The same shape with the doing handed over. The coins are tapped one at a time to identify them and to count them, and each of those beats waits for its taps. The chart is **not** tapped: skip counting it is the skill being practised, so the student reads it and types where they landed. |
-| `freeplay` | `FREEPLAY_PROBLEMS` — ten piles, one at a time, no scaffolding. Finishing them sets `lesson.completed`. |
+| `freeplay` | `FREEPLAY_PROBLEMS` — ten piles, one at a time, no scaffolding. The narrator's band goes after the first puzzle (`NARRATED_FREEPLAY_PUZZLES`): all ten ask the same sentence, and the voice goes with the band rather than playing on behind a missing mute button. Finishing them sets `lesson.completed`. |
 
 | File | Holds |
 | --- | --- |
@@ -97,12 +97,17 @@ keep it honest, and all four exist because something really does go wrong withou
 - A **gate** for anything waiting on the student. `openGate()` records it in `pendingGate`
   so `destroy()` can settle it — an unsettled gate holds every closure in the view alive.
 
-Two rules when editing this flow:
+Three rules when editing this flow:
 
 1. **After every `await`, check `cancelled` before touching the DOM.** The view can be
    destroyed mid-count, and `grid.animateSkipCount()` resolves `false` when it was reset or
    torn down rather than finishing.
-2. **Open a gate inside the beat that enables the control, not after it.** Enable Check
+2. **A wrong answer hands over to Retry, not back to the field.** The red star, the coins
+   landed under it and the number in the box are all still on screen, so `check()` leaves the
+   field disabled and takes Retry off the lock the field is under
+   (`update({ retryDisabled: false })`); `resetPuzzle()` is what clears the three of them
+   together. It still must not settle the answer gate — the mode is parked on it, waiting.
+3. **Open a gate inside the beat that enables the control, not after it.** Enable Check
    Answer and *then* create the gate and a fast tap lands in the gap and is lost forever.
    The beat that *waits* on a gate need not be the beat that opened it — guided's
    `skip-count` opens the field and arms the gate, and the `answer` beat after it awaits
@@ -151,6 +156,16 @@ Load-bearing, all of it:
   scaled footprint so centring and scrolling have something to work with, and it gets
   `margin: auto`: `justify-content: center` would push the left edge somewhere the
   scrollbar cannot reach on a small display.
+- **The narrator's band is the one box sized by what is in it, and its caption has a
+  two-line budget.** `.pc-lesson__narration` carries no height at all: the caption reserves
+  `--pc-lesson-caption-lines` of `--pc-lesson-caption-line` and the band comes out at 145,
+  19 clear of the pile — so it is the *pile* moving up that would put narration in the
+  coins, not a long line. Two lines is what the longest line in `lesson.content.js` wraps to
+  at that width, and a third is pixels the work column does not have, so a new line that
+  wraps to three gets a scrollbar rather than room. The line box is a whole design pixel on
+  purpose: 1.65 of `--pc-text-base` is 27.72, and two of those come out a fraction taller
+  than the box that rounds to hold them, which is how the scrollbar got there in the first
+  place.
 - The chart is placed by its **cells**, not its box, and `GRID_INSET` is measured to the
   cells too. The SVG pads itself by `PAD` so its border stroke is not clipped, and
   `loadProblem()` takes that padding back off *both* offsets — `--pc-lesson-chart-top` and

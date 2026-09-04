@@ -101,8 +101,14 @@
 /*
  * The narrator takes the top left corner, its top edge level with the chart's
  * first cell — the student's eye moves between the two constantly, a line being
- * spoken and the cell it is about. The band is sized to fit so a long line can
- * never reach down into the coins.
+ * spoken and the cell it is about.
+ *
+ * It is the one box in the design whose height is not typed here. The caption
+ * below reserves its lines and the band comes out at whatever the narrator's own
+ * chrome adds to them — 145, which leaves 19 down to the pile. That 19 is the
+ * slack to watch: the band no longer measures itself against
+ * `--pc-lesson-pile-top`, so moving the pile *up* is what would put a line of
+ * narration into the coins.
  */
 .pc-lesson__narration {
     position: absolute;
@@ -110,21 +116,40 @@
     left: var(--pc-space-5);
 
     width: calc(var(--pc-lesson-work-width) - 2 * var(--pc-space-5));
-    height: calc(
-        var(--pc-lesson-pile-top) - var(--pc-lesson-content-top) - var(--pc-space-5)
-    );
+
+    /*
+     * One caption line as a whole design pixel, and how many of them the band
+     * holds. 28 is the body's 1.65 over `--pc-text-base`'s 16.8 rounded up:
+     * 27.72 leaves two lines a fraction taller than the box that holds them,
+     * which is a scrollbar over nothing.
+     */
+    --pc-lesson-caption-line: 28px;
+    --pc-lesson-caption-lines: 2;
 }
 
-.pc-lesson__narration .pc-narrator { height: 100%; }
-
-/* Smaller than the component's default, to keep three lines inside the band. */
+/*
+ * Two lines of caption, reserved whether or not the line being spoken needs
+ * them — and it is the caption that is pinned rather than the band round it.
+ *
+ * Two is the whole requirement, measured rather than assumed: of every line in
+ * `lesson.content.js` at this width, the longest — guided's "Now skip count by
+ * pointing where each dime lands…" — wraps to two, and nothing reaches three.
+ * The band used to be sized to the gap it left instead, which came out 1.3
+ * short of holding them, and the caption grew a scrollbar: for a K-2 kid that
+ * is a line of the lesson they simply do not read. Sizing the box from the text
+ * is also what keeps `narrator.css`'s border, padding, gap and control height
+ * out of this file, where a second copy of them would go stale.
+ *
+ * Fixed rather than a `min-height` so the controls beneath do not shift between
+ * a one-line beat and a two-line one; a six-year-old is aiming at "Say it
+ * again". `overflow-y` stays as the net under a line that outgrows the two.
+ */
 .pc-lesson__narration .pc-narrator__caption {
     font-size: var(--pc-text-base);
-    min-height: 0;
+    line-height: var(--pc-lesson-caption-line);
+    height: calc(var(--pc-lesson-caption-lines) * var(--pc-lesson-caption-line));
     overflow-y: auto;
 }
-
-.pc-lesson__narration .pc-narrator__controls { margin-top: auto; }
 
 /*
  * Everything the student touches, in the space the chart leaves: the pile, the

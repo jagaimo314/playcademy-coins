@@ -155,6 +155,18 @@ const DWELL_PER_CHAR_MS = 45
 /** Ceiling on waiting for speech: a voice that never fires `end` must not stall. */
 const SPEECH_CAP_MS = 14000
 
+/**
+ * How many free-play puzzles keep the narrator on screen. Every one of the ten
+ * asks the same sentence — "How much is this worth?" — so past the first the
+ * band is a caption of something the student read a puzzle ago, and the pile
+ * with a box under it is asking the question perfectly well on its own.
+ *
+ * The voice goes with the band rather than carrying on behind it: the mute and
+ * replay controls live inside the band, so a student who wanted the sound off
+ * would have nothing left to press.
+ */
+const NARRATED_FREEPLAY_PUZZLES = 1
+
 /** What each mode is called on screen. `freeplay` counts the puzzles instead. */
 const MODE_LABELS = Object.freeze({
     instruction: 'Instruction',
@@ -193,6 +205,9 @@ export function createLessonView({ store, navigate, params }) {
     /** The pile and the chart are rebuilt per problem; these hold their place. */
     const pileHolder = el('div', { class: 'pc-lesson__pile' })
     const chartHolder = el('div', { class: 'pc-lesson__chart' })
+
+    /** Named because free play takes it away — see `NARRATED_FREEPLAY_PUZZLES`. */
+    const narrationBand = el('div', { class: 'pc-lesson__narration' }, narrator.el)
 
     const modeLabel = el('p', { class: 'pc-lesson__mode' })
 
@@ -299,10 +314,19 @@ export function createLessonView({ store, navigate, params }) {
 
         checking = false
         // A right answer stays put until the next problem is loaded; a wrong one
-        // hands the field straight back.
+        // hands over to Retry rather than back to the field.
+        //
+        // The board is still showing the attempt that just failed — a red star
+        // on the chart, the coins it counted landed under it, the number in the
+        // box — and a second answer typed over the top of all that would be
+        // read against a chart already marked up with the first. `resetPuzzle()`
+        // is what clears the three of them together, and Retry is what calls it,
+        // so Retry is the only way on. The field is already disabled from the
+        // top of this function; it stays that way, and Retry comes off the lock
+        // it inherited so there is something left to press.
         if (!isCorrect) {
-            answer.update({ disabled: false })
-            answer.focus()
+            answer.update({ disabled: true, retryDisabled: false })
+            answer.focusRetry()
             return false
         }
 
@@ -585,7 +609,29 @@ export function createLessonView({ store, navigate, params }) {
     const GUIDED_MOVES = {
         // Tapping turns a coin over to its value side — the student checking
         // their own memory rather than being told the answer again.
-        yours: () => { onCoinTap = index => pile.peekCoin(index) },
+        //
+        // The beat waits for that tap instead of asking for it and moving on.
+        // The line is the only thing standing between the instruction phase and
+        // counting on their own, and it is the one beat of it that is not a
+        // gate anywhere else; a student who did not turn a coin over has not
+        // checked what it is worth, they have been told twice. The line is
+        // spoken while we wait, so the ask and the waiting are one beat.
+        yours: () => {
+            const gate = openGate()
+
+            onCoinTap = async index => {
+                // The first tap is the whole ask, and the peek turns the coin
+                // back over when it is done. Dropping the handler here is what
+                // keeps a second flip from starting under the counting beat,
+                // which marks these same coins.
+                onCoinTap = null
+
+                await pile.peekCoin(index)
+                gate.settle()
+            }
+
+            return gate.done
+        },
 
         'count-coins': () => tapEveryCoin(alreadyTapped => String(alreadyTapped + 1)),
 
@@ -632,8 +678,20 @@ export function createLessonView({ store, navigate, params }) {
 
             answer.update({ disabled: false })
 
+            // The prompt does not change from one puzzle to the next, so the
+            // band earns its place on the first one and not after it. Cancelled
+            // rather than merely hidden: the line before may still be being
+            // spoken, having outrun `SPEECH_CAP_MS` and been left running, and
+            // a voice with no band to mute it is worse than either.
+            const narrated = index < NARRATED_FREEPLAY_PUZZLES
+
+            if (!narrated) narrator.cancel()
+            narrationBand.hidden = !narrated
+
             await Promise.all([
-                Promise.race([narrator.say(next.prompt), delay(SPEECH_CAP_MS)]),
+                narrated
+                    ? Promise.race([narrator.say(next.prompt), delay(SPEECH_CAP_MS)])
+                    : Promise.resolve(),
                 // The gate is opened in the same tick the field is enabled, so
                 // there is no window in which an answer can be missed.
                 awaitCorrectAnswer(),
@@ -760,7 +818,7 @@ export function createLessonView({ store, navigate, params }) {
         el('div', { class: 'pc-lesson__panel' }),
 
         toolbar,
-        el('div', { class: 'pc-lesson__narration' }, narrator.el),
+        narrationBand,
         el('div', { class: 'pc-lesson__work' }, [pileHolder, answer.el]),
         chartHolder,
 

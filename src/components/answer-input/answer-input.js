@@ -134,10 +134,26 @@ export function createAnswerInput({
                 // must not reset a puzzle mid-count.
                 if (retry) retry.disabled = next.disabled
             }
+
+            // Read after `disabled` because it is the exception to it. A caller
+            // that locks the field on a wrong answer — so the board has to be
+            // cleared before the next attempt — needs the one control that
+            // clears it to stay live while everything else is shut.
+            if (next.retryDisabled !== undefined && retry) {
+                retry.disabled = next.retryDisabled
+            }
         },
 
         focus() {
             input.focus()
+        },
+
+        /**
+         * Put focus on Retry. For that same caller: with the field locked the
+         * focus has to go somewhere, and Retry is the only thing left to press.
+         */
+        focusRetry() {
+            retry?.focus()
         },
 
         /** Fill the field in. The lesson uses this to model an answer. */
