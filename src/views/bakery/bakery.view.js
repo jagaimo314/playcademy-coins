@@ -181,6 +181,9 @@ export function createBakeryView({ params, store, navigate }) {
             config: payload.config ?? room.config,
             game: payload.game,
             onClaim: itemId => adapter.send('action/claim', { itemId }),
+            // The floor never routes; it asks. The view owns navigation because
+            // it is the thing that has to hand the room back on the way out.
+            onExit: () => navigate('/'),
         })
 
         clear(root)

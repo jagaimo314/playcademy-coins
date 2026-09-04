@@ -222,6 +222,15 @@
 }
 
 /*
+ * The overlay's gap is set for the sentences that stack above; the way out
+ * needs more air than a line of prose does, so a child reading the score does
+ * not land on the button by accident.
+ */
+.pc-game__exit {
+    margin-top: var(--pc-space-3);
+}
+
+/*
  * The win rating. Earned and unearned stars differ in fill *and* in stroke
  * weight: a child with no colour vision still counts the solid shapes
  * against the hollow ones, and the row's aria-label says the score outright.

@@ -95,7 +95,7 @@ const RUN_WIDTH = FRAME_WIDTH - RUN_MARGIN * 2
 const PANEL_MARGIN = 20
 const PANEL_GAP = 12
 
-export function createBakeryGame({ playerId, config, game, onClaim }) {
+export function createBakeryGame({ playerId, config, game, onClaim, onExit }) {
     const slotCount = config.slotCount ?? 8
     const slotPitch = RUN_WIDTH / slotCount
     const hopMs = config.hopMs ?? HOP_MS
@@ -556,6 +556,17 @@ export function createBakeryGame({ playerId, config, game, onClaim }) {
         overlay.hidden = false
         overlay.classList.toggle('is-win', won)
 
+        /*
+         * The way out, under the score rather than over it: the numbers are
+         * what the run was for, and a control placed above them is a control
+         * pressed before they are read.
+         */
+        const exitButton = el('button', {
+            type: 'button',
+            class: 'pc-button pc-button--blue pc-game__exit',
+            onClick: () => onExit?.(),
+        }, 'Back to menu')
+
         append(overlay, [
             el('h2', {}, won
                 ? 'Congratulations! Enjoy your bakery items.'
@@ -563,7 +574,13 @@ export function createBakeryGame({ playerId, config, game, onClaim }) {
             won ? createStarRating(starsFor(payload.results)) : null,
             el('p', {}, `You purchased ${payload.results.served} of ${payload.results.target}.`),
             mine ? el('p', {}, `You alone purchased ${mine.score}.`) : null,
+            exitButton,
         ])
+
+        // The game ends on its own, so nobody touched a control to get here and
+        // the focus has to be moved by hand — the same reason the lesson's last
+        // card moves it. The button is the only thing left to do.
+        exitButton.focus()
     }
 
     /* ------------------------------------------------------------------ init */
