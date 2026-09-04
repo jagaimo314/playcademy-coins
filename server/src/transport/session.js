@@ -2,7 +2,7 @@
  * Who a socket is.
  *
  * Identity here is per-room and disposable, which settles one of the deferred
- * decisions in `docs/multiplayer-contract.md`: there are no accounts, nothing is
+ * decisions in the Bakery's design record: there are no accounts, nothing is
  * persisted, and a `playerId` means nothing once its room is gone. A child types
  * a name and a code and is in.
  */

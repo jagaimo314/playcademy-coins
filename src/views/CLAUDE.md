@@ -192,7 +192,7 @@ that watches the store.
 ## `bakery/`
 
 Playable. The lobby and the game both run against the real backend in `server/` over a
-WebSocket. `docs/bakery-backend-plan.md` is the design record for both halves.
+WebSocket. `docs/bakery-ui-mockup/bakery-backend-plan.md` is the design record for both halves.
 
 **The transport is chosen in exactly one place: `net/index.js`.** It returns the real
 `ws-room-adapter` by default and the in-memory fake under `VITE_USE_FAKE_ROOM=1`; nothing in

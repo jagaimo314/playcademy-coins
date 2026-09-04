@@ -26,7 +26,7 @@ Vanilla JS, ES6 modules, no framework. Vite bundles and serves; it does not chan
 │  │  │  └─ lesson.css
 │  │  └─ bakery/
 │  │     ├─ bakery.view.js
-│  │     ├─ net/               # network adapter implementation (see multiplayer-contract.md)
+│  │     ├─ net/               # network adapter implementation
 │  │     └─ bakery.css
 │  │
 │  ├─ components/              # shared, view-agnostic, independently usable

@@ -73,10 +73,9 @@ anywhere.** Dollar bills are out of scope.
 
 | Doc | What it covers |
 | --- | --- |
-| `docs/take-home.html` | The original brief — source of truth for requirements. |
-| `docs/overview.md` | The three views, navigation rules, audience constraints. |
 | `docs/architecture.md` | Folder structure, routing, view/component contracts, state, styling. |
-| `docs/multiplayer-contract.md` | Room/message contract and the network adapter interface. |
+| `docs/bakery-ui-mockup/bakery-backend-plan.md` | The Bakery's design: authoritative loop, the belt and slot model, the room and message contract. |
+| `docs/bakery-ui-mockup/bake-sale-ui-plan.md` | The art direction the Bakery view was built to, and the mockup it was proven against. |
 
 Three places where the code has moved past the docs:
 

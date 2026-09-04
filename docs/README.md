@@ -4,11 +4,9 @@ Reference material for the Playcademy take-home build. Read in this order.
 
 | Doc | What it covers |
 | --- | --- |
-| [take-home.html](take-home.html) | The original assignment brief (source of truth for requirements). |
-| [overview.md](overview.md) | What we are building: the three views, navigation rules, and how they map to the brief. |
 | [architecture.md](architecture.md) | Folder structure, routing, view lifecycle, component contract, state, tooling. |
-| [multiplayer-contract.md](multiplayer-contract.md) | Transport-agnostic room/message contract and the client-side network adapter interface. |
-| [bakery-backend-plan.md](bakery-backend-plan.md) | The Bakery game design and the plan for `server/`: authoritative loop, protocol additions, content generation, milestones. |
+| [bakery-ui-mockup/bakery-backend-plan.md](bakery-ui-mockup/bakery-backend-plan.md) | The Bakery game design and the plan for `server/`: authoritative loop, the room and message contract, content generation, milestones. |
+| [bakery-ui-mockup/bake-sale-ui-plan.md](bakery-ui-mockup/bake-sale-ui-plan.md) | The art direction the Bakery view was built to, and the mockup it was proven against. |
 
 ## Decisions already made
 

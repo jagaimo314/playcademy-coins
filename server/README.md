@@ -1,8 +1,8 @@
 # server/
 
 The authoritative multiplayer backend for the Bakery. Built to
-[`docs/bakery-backend-plan.md`](../docs/bakery-backend-plan.md) — read that first; it is the
-design record and this is the code.
+[`docs/bakery-ui-mockup/bakery-backend-plan.md`](../docs/bakery-ui-mockup/bakery-backend-plan.md)
+— read that first; it is the design record and this is the code.
 
 **M0–M2 are built.** The lobby, the belt, the dealer and claim resolution all work end to
 end, and the game is playable two-up in two browsers. M3 (doors, jams, the difficulty table,

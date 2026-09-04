@@ -101,6 +101,5 @@ Imports flow one way: `views → components → lib`, with `state` reachable fro
 | `docs/FRONTEND.pdf` | Components, asset generation, the bake sale art direction, gamification |
 | `docs/MULTIPLAYER.pdf` | The authoritative server, rooms, the belt, and the dealer |
 
-`docs/` also holds the design record the build was written against: `overview.md`,
-`architecture.md`, `multiplayer-contract.md` and `bakery-backend-plan.md`, plus the original brief
-in `take-home.html`.
+`docs/` also holds the design record the build was written against: `architecture.md`, plus the
+Bakery's mockup, art direction and backend plan under `bakery-ui-mockup/`.

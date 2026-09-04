@@ -1,10 +1,10 @@
 /**
  * Every number the game is played by, in one file.
  *
- * `docs/bakery-backend-plan.md` pins these in prose; this is the executable copy
- * and the two are meant to be read together. Nothing else in `server/` may hold
- * a game constant — a tuning number that lives at its call site is a number
- * nobody finds when the game plays wrong.
+ * `docs/bakery-ui-mockup/bakery-backend-plan.md` pins these in prose; this is the
+ * executable copy and the two are meant to be read together. Nothing else in
+ * `server/` may hold a game constant — a tuning number that lives at its call
+ * site is a number nobody finds when the game plays wrong.
  */
 
 /**

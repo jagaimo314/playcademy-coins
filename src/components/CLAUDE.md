@@ -39,13 +39,13 @@ one that changed sides on the way reads as a different coin rather than as the o
 counted. Roll them at the call site (the Lesson does, per problem); do not let either
 component roll its own.
 
-**Where the conveyor pair sits.** An early draft of `docs/bakery-backend-plan.md` sketched the
-belt and the tray under `views/bakery/game/`. They are here instead — view-agnostic SVG that
-reads no state and knows nothing about a room — and the plan now says so. Only the Bakery uses
-them today, which is one view rather than the two the bar above asks for: a deliberate
-exception, on the reasoning that a belt of priced trays is the part of the game most likely to
-be wanted outside the board. If that never happens, move them down into the view rather than
-leaving the exception to rot.
+**Where the conveyor pair sits.** An early draft of the Bakery's backend plan
+(`docs/bakery-ui-mockup/bakery-backend-plan.md`) sketched the belt and the tray under
+`views/bakery/game/`. They are here instead — view-agnostic SVG that reads no state and knows
+nothing about a room — and the plan now says so. Only the Bakery uses them today, which is one
+view rather than the two the bar above asks for: a deliberate exception, on the reasoning that
+a belt of priced trays is the part of the game most likely to be wanted outside the board. If
+that never happens, move them down into the view rather than leaving the exception to rot.
 
 `views/bakery/game/` is not empty, though — it holds the *composition*: the id-to-tray mirror,
 the frame's three bands, and the flight a claimed tray takes to its buyer's panel. That is
