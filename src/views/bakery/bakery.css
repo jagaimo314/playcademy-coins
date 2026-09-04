@@ -13,6 +13,44 @@
     letter-spacing: 0.08em;
 }
 
+/*
+ * The name field. Label stacked over the box so it holds at any card width, and
+ * set in the display face because what is typed here is the same string that
+ * ends up on the wallet tab on the bakery floor — it should look like the thing
+ * it is going to become.
+ */
+.pc-bakery__name {
+    display: flex;
+    flex-direction: column;
+    gap: var(--pc-space-1);
+}
+
+.pc-bakery__name-label {
+    font-weight: 800;
+    font-size: var(--pc-text-sm);
+    color: var(--pc-ink-soft);
+}
+
+.pc-bakery__name-input {
+    font-family: var(--pc-font-display);
+    font-size: var(--pc-text-lg);
+    font-weight: 800;
+    color: var(--pc-ink);
+
+    background: var(--pc-white);
+    border: var(--pc-border);
+    border-radius: var(--pc-radius-sm);
+    padding: var(--pc-space-2) var(--pc-space-3);
+
+    /* Room for the twelve characters the server keeps, and no more. */
+    max-width: 16ch;
+}
+
+.pc-bakery__name-input::placeholder {
+    color: var(--pc-ink-soft);
+    opacity: 0.6;
+}
+
 .pc-bakery__players {
     list-style: none;
     margin: 0;
@@ -70,4 +108,20 @@
 
 .pc-bakery__tag--ready {
     background: var(--pc-green-ink);
+}
+
+/*
+ * Your own row, marked twice over: lifted off the stack and labelled in words.
+ * The lift is what the eye finds and the tag is what a screen reader reads, and
+ * neither is the colour — which is already carrying the seat's identity on the
+ * bakery floor and cannot also carry "this one is yours".
+ */
+.pc-bakery__player.is-you {
+    box-shadow: var(--pc-shadow);
+    background: var(--pc-white);
+}
+
+.pc-bakery__tag--you {
+    background: var(--pc-blue);
+    color: var(--pc-ink);
 }

@@ -181,11 +181,18 @@ export function createWsRoomAdapter({ url = defaultUrl(), syncIntervalMs = 10000
             return status
         },
 
-        host({ playerName = 'You' } = {}) {
+        /*
+         * No default name here. An adapter that invents one puts a second
+         * opinion about a seat's name behind the server's, and the last time
+         * that default was 'You' every seat in the room read as 'You'. Pass
+         * nothing and the server names the seat 'Baker' until the child renames
+         * it in the lobby.
+         */
+        host({ playerName } = {}) {
             return enter('room/host', { playerName })
         },
 
-        join({ code, playerName = 'You' } = {}) {
+        join({ code, playerName } = {}) {
             let resumeToken = null
 
             try {

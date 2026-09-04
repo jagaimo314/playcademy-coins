@@ -77,12 +77,18 @@ export const PLAYER_COLORS = Object.freeze(['red', 'blue', 'green', 'yellow'])
  * a rule of the wallet, which fits a hand by shrinking its coins, so twenty
  * pennies is legal arithmetic and an illegible panel.
  *
- * It cannot go below 9. Hard mode reaches 99¢, and 99¢ in US coins is nine of
- * them at its most efficient (three quarters, two dimes, four pennies) — a
- * tighter budget would make part of the range unreachable and the dealer would
+ * It cannot go below 9. Every mixed tier now reaches 99¢, and 99¢ in US coins is
+ * nine of them at its most efficient (three quarters, two dimes, four pennies) —
+ * a tighter budget would make part of the range unreachable and the dealer would
  * quietly retry its way around it.
+ *
+ * Twelve rather than nine because the three spare coins are what `addVariety`
+ * spends: at exactly nine, a 99¢ hand is the greedy decomposition and nothing
+ * else, and a child learns the shape of the greedy algorithm instead of learning
+ * to add. The wallet fits whatever it is handed by scaling the coins together,
+ * so this is a legibility budget and not a layout constraint.
  */
-export const MAX_HAND_COINS = 10
+export const MAX_HAND_COINS = 12
 
 /**
  * The difficulty table.
@@ -100,12 +106,23 @@ export const MAX_HAND_COINS = 10
 export const DIFFICULTIES = Object.freeze({
     easy: Object.freeze({
         advanceMs: 3000,
-        maxBelts: 1,
+        maxBelts: 3,
         doors: 'closed',
         wasteOnExit: 'none',
-        // Exactly the knowledge component the lesson teaches: one denomination,
-        // skip-counted. A kid arriving from the lesson has already done this.
-        hand: Object.freeze({ mixed: false, minValue: 5, maxValue: 25 }),
+        /*
+         * The goal node, not the lesson's node.
+         *
+         * The brief asks for a multiplayer game for *summing a handful of coins*
+         * — the top of the graph — and a single-denomination hand is KC13, the
+         * thing the lesson already taught. So the shipped tier deals mixed hands
+         * under a dollar: the child sorts the handful into like piles (KC14),
+         * prices each pile by skip counting (KC13, what they just learned), and
+         * adds the subtotals (KC15). That is the capstone, played.
+         *
+         * The slowest beat in the table stays with it. Mixed hands are the extra
+         * load here; adding time pressure on top would be measuring typing speed.
+         */
+        hand: Object.freeze({ mixed: true, minValue: 5, maxValue: 99 }),
     }),
     medium: Object.freeze({
         advanceMs: 2000,
@@ -135,20 +152,19 @@ export function difficultyConfig(name) {
 }
 
 /**
- * **The M2 pin, and the one place M3 unpins it.**
+ * **The setup a game actually runs, and the one place the doors stay pinned.**
  *
- * M2's deliverable is a game that is playable, not a game that is tuned. So it
- * runs one belt with the doors held open: the mouth always empties, a belt can
- * never back up, and the jam affordance and the incinerator — the things a
- * closed door is *for* — stay in M3 where they belong.
+ * Belt count is live and comes from `beltCountFor`. The doors are still held
+ * open: `belts.js` implements the full rule (`canAdvance(MOUTH_SLOT) =
+ * doorsOpen`), but the jam affordance a closed door produces — a belt visibly
+ * backing up, and the UI that explains why — is M3. Shipping the rule without
+ * the affordance would give a child a stalled belt and no reason for it.
  *
- * `belts.js` implements the full rule anyway (`canAdvance(MOUTH_SLOT) =
- * doorsOpen`), so M3 is deleting this function and calling `beltCountFor` and
- * the difficulty's `doors` directly. Nothing in the motion code changes.
+ * So M3 is deleting two lines here and reading the difficulty's `doors`.
  */
 export function resolveSetup(playerCount, difficulty) {
     return {
-        beltCount: 1,
+        beltCount: beltCountFor(playerCount, difficulty),
         doorsOpen: true,
         // Decoys reaching the fire are free; food somebody was holding the coins
         // for is not. Even pinned open, this keeps `wasted` meaning *error*.
@@ -158,12 +174,27 @@ export function resolveSetup(playerCount, difficulty) {
 }
 
 /**
- * M3's belt count. Written now because it is one line and the plan pins it;
- * `resolveSetup` above is what actually decides until M3 lands.
+ * Belts by player count, indexed by it. Index 0 is unreachable and carries 1 so
+ * the lookup is total.
+ *
+ * Two players get two belts rather than one, because one belt is a queue: eight
+ * slots shared by two children means long stretches where nothing on screen is
+ * worth either of their hands, and the one tray that is becomes a race instead
+ * of two parallel problems. The fourth player is what buys the third belt —
+ * three children still fit across two without crowding each other's targets.
+ *
+ * Not a formula. `ceil(n / 2)` reads as if it means something and then gives a
+ * lone belt to the two-player game, which is precisely the case this table
+ * exists to fix.
  */
+const BELTS_BY_PLAYER_COUNT = Object.freeze([1, 1, 2, 2, 3])
+
+/** Belts for a room of `playerCount`, never more than the tier allows. */
 export function beltCountFor(playerCount, difficulty) {
     const { maxBelts } = difficultyConfig(difficulty)
-    return Math.min(Math.max(Math.ceil(playerCount / 2), 1), 3, maxBelts)
+    const seats = Math.min(Math.max(playerCount, 1), MAX_PLAYERS)
+
+    return Math.min(BELTS_BY_PLAYER_COUNT[seats], maxBelts)
 }
 
 export const SERVE_TARGET = playerCount => SERVE_PER_PLAYER * playerCount

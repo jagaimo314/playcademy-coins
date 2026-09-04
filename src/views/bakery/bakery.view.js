@@ -34,6 +34,59 @@ export function createBakeryView({ params, store, navigate }) {
     const playerList = el('ul', { class: 'pc-bakery__players' })
     const statusLine = el('p', { class: 'pc-bakery__status', role: 'status' }, 'Connecting…')
 
+    /* ----------------------------------------------------------- your name */
+
+    /**
+     * The name is typed here rather than on the menu, because the lobby is the
+     * first screen where it means anything: you can see the other seats fill in
+     * and your own row change under you as you type. `maxlength` matches the
+     * server's own cap, so the trim happens in front of the child instead of
+     * silently on the way out.
+     */
+    const nameInput = el('input', {
+        class: 'pc-bakery__name-input',
+        type: 'text',
+        id: 'pc-bakery-name',
+        maxlength: '12',
+        autocomplete: 'off',
+        spellcheck: 'false',
+        placeholder: 'Baker',
+        value: store.get('player.name') ?? '',
+    })
+
+    const nameField = el('div', { class: 'pc-bakery__name' }, [
+        el('label', { class: 'pc-bakery__name-label', for: 'pc-bakery-name' }, 'Your name'),
+        nameInput,
+    ])
+
+    let renameTimer = null
+
+    /**
+     * Sent as they type, not on blur.
+     *
+     * A child types their name and then looks at the screen; they do not tab
+     * away, and the host may press Start before they ever do. Debounced so the
+     * socket sees one message per pause rather than one per keystroke, and
+     * `change` flushes it immediately for the child who does press Enter.
+     */
+    function pushName({ immediate = false } = {}) {
+        clearTimeout(renameTimer)
+
+        const send = () => {
+            const name = nameInput.value.trim()
+            if (!name) return
+
+            store.set('player.name', name)
+            adapter.send('player/rename', { name })
+        }
+
+        if (immediate) send()
+        else renameTimer = setTimeout(send, 350)
+    }
+
+    nameInput.addEventListener('input', () => pushName())
+    nameInput.addEventListener('change', () => pushName({ immediate: true }))
+
     const readyButton = createPrimaryButton({
         label: 'I am ready',
         variant: 'gold',
@@ -59,7 +112,7 @@ export function createBakeryView({ params, store, navigate }) {
                 'Read the code out to your friends. They type it on the menu.'),
         ]),
 
-        el('div', { class: 'pc-card pc-stack' }, [codeLabel, playerList, statusLine]),
+        el('div', { class: 'pc-card pc-stack' }, [codeLabel, nameField, playerList, statusLine]),
         el('div', { class: 'pc-bakery__actions' }, [readyButton.el, startButton.el]),
 
         backButton.el,
@@ -78,11 +131,21 @@ export function createBakeryView({ params, store, navigate }) {
         clear(playerList)
 
         for (const player of room.players) {
+            const isMe = player.id === me
+
             playerList.appendChild(
                 el('li', {
-                    class: ['pc-bakery__player', `pc-bakery__player--${player.colorSlot}`],
+                    class: [
+                        'pc-bakery__player',
+                        `pc-bakery__player--${player.colorSlot}`,
+                        // Which row is yours has to be readable, not inferred
+                        // from the order seats happened to fill in. Four children
+                        // typing four names need to find themselves in the list.
+                        isMe ? 'is-you' : null,
+                    ],
                 }, [
                     player.name,
+                    isMe ? el('span', { class: 'pc-bakery__tag pc-bakery__tag--you' }, 'you') : null,
                     // The colour is a border, so it is also written down. A panel
                     // identified only by the colour of its edge is identified by
                     // nothing at all to a child who cannot see it.
@@ -152,9 +215,17 @@ export function createBakeryView({ params, store, navigate }) {
         if (!game) startGame(payload)
     }))
 
+    /*
+     * No name is sent when we do not have one. The seat comes back as 'Baker'
+     * from the server and the child renames it in the field above — which is a
+     * far better default than the literal 'You' this used to send, because
+     * 'You' is what *every* seat in the room then read as, on every screen.
+     */
+    const playerName = store.get('player.name') || undefined
+
     const connect = isJoining
-        ? adapter.join({ code: joinCode, playerName: store.get('player.name') ?? 'You' })
-        : adapter.host({ playerName: store.get('player.name') ?? 'You' })
+        ? adapter.join({ code: joinCode, playerName })
+        : adapter.host({ playerName })
 
     connect
         .then(result => {
@@ -176,6 +247,7 @@ export function createBakeryView({ params, store, navigate }) {
     return {
         el: root,
         destroy() {
+            clearTimeout(renameTimer)
             for (const off of unsubscribers) off()
 
             game?.destroy()

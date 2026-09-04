@@ -35,8 +35,10 @@ network status, live game state. The server is authoritative for anything multip
 
 `lesson.completed` is the Bakery's unlock. Only finishing the Lesson's ten free-play
 puzzles should set it for real. The Lesson also carries a **"Dev: mark lesson complete"**
-button so the gate can be exercised without sitting through the lesson — delete it before
-shipping.
+button so the gate can be exercised without sitting through the lesson. **It stays.** The
+Bakery needs two players, so anyone demoing this has to be able to reach it from a standing
+start; the README documents the button as part of how you play the game on your own. Keep it
+working when you touch the toolbar.
 
 ## A component only this view will use belongs in this folder
 

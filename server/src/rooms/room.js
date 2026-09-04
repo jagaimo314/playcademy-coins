@@ -30,6 +30,30 @@ import { step } from '../game/step.js'
 import { createRateLimiter } from '../transport/socket.js'
 import { newPlayerId, newResumeToken } from '../transport/session.js'
 
+/**
+ * How long a name may be.
+ *
+ * The limit is the wallet tab it has to sit on, not the protocol. Twelve
+ * characters is the widest string that still reads at the tab's type size on the
+ * narrowest panel — a room of four — and a child who types their whole name into
+ * the box should get it back trimmed rather than get a lobby row that pushes the
+ * colour tag off the card.
+ */
+const NAME_MAX = 12
+
+/**
+ * A name off the wire, made fit to render.
+ *
+ * Whitespace is collapsed so a row cannot be padded out with spaces, and the
+ * result is capped. No escaping: the DOM is built with text nodes throughout
+ * (`lib/dom.js`, no `innerHTML` anywhere), so a name is never parsed as markup.
+ * Returns `''` for anything unusable, which is what makes `|| 'Baker'` at the
+ * call sites the single place a default is decided.
+ */
+function cleanName(input) {
+    return String(input ?? '').replace(/\s+/g, ' ').trim().slice(0, NAME_MAX)
+}
+
 const ERRORS = {
     ROOM_FULL: 'This bake sale is full.',
     GAME_IN_PROGRESS: 'That game has already started.',
@@ -145,7 +169,7 @@ export function createRoom({ code, allowSolo = false, now = () => Date.now() }) 
         if (existing) {
             existing.send = sendFn
             existing.connected = true
-            existing.name = playerName || existing.name
+            existing.name = cleanName(playerName) || existing.name
 
             broadcast('player/connection', { playerId: existing.id, connected: true })
             broadcastState()
@@ -158,7 +182,7 @@ export function createRoom({ code, allowSolo = false, now = () => Date.now() }) 
 
         const player = {
             id: newPlayerId(),
-            name: playerName || 'Baker',
+            name: cleanName(playerName) || 'Baker',
             colorSlot: freeColor(),
             // The first through the door hosts. The privilege is only "may press
             // start" — the server is authoritative, so nothing else depends on it.
@@ -242,6 +266,26 @@ export function createRoom({ code, allowSolo = false, now = () => Date.now() }) 
                 player.ready = Boolean(payload.ready)
                 broadcastState()
                 return
+
+            /*
+             * Renaming is a lobby move only. Mid-game the panels are already
+             * drawn and a child watching a friend's wallet re-label itself while
+             * they are counting it is a distraction the game does not need.
+             *
+             * An unusable name leaves the old one standing rather than clearing
+             * the seat to 'Baker': a child who selects their name and hits
+             * delete has not asked to become anonymous.
+             */
+            case 'player/rename': {
+                if (phase !== 'lobby') return
+
+                const name = cleanName(payload.name)
+                if (!name || name === player.name) return
+
+                player.name = name
+                broadcastState()
+                return
+            }
 
             case 'game/start':
                 start(playerId, payload.difficulty)

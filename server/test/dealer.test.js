@@ -26,13 +26,29 @@ describe('hands', () => {
         })
     }
 
-    it('easy deals one denomination — exactly what the lesson taught', () => {
+    /*
+     * The shipped tier plays the *goal* node, not the lesson's node. A hand of
+     * one denomination is KC13, which the lesson already taught, so easy dealing
+     * single piles would mean the multiplayer game never exercises the skill it
+     * exists for. Mixed handfuls under a dollar are the capstone: sort into like
+     * piles, price each by skip counting, add the subtotals.
+     */
+    it('easy deals mixed handfuls under a dollar — the top of the graph', () => {
         const cursor = createCursor(11)
+        let mixed = 0
+        let overAQuarter = 0
 
         for (let i = 0; i < 300; i += 1) {
-            const { coins } = dealHand(cursor, 'easy')
-            assert.equal(new Set(coins).size, 1, `mixed hand on easy: ${coins.join(', ')}`)
+            const { coins, value } = dealHand(cursor, 'easy')
+
+            assert.ok(value < 100, `${value}¢ is a dollar or more`)
+
+            if (new Set(coins).size > 1) mixed += 1
+            if (value > 25) overAQuarter += 1
         }
+
+        assert.ok(mixed > 200, `only ${mixed}/300 hands needed sorting`)
+        assert.ok(overAQuarter > 150, `only ${overAQuarter}/300 hands beat a single quarter`)
     })
 
     it('mixed difficulties actually mix, rather than always dealing minimal change', () => {

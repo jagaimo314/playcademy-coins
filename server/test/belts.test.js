@@ -1,7 +1,7 @@
 import { strict as assert } from 'node:assert'
 import { describe, it } from 'node:test'
 
-import { MOUTH_SLOT, SLOT_COUNT } from '../src/game/config.js'
+import { MOUTH_SLOT, SLOT_COUNT, beltCountFor } from '../src/game/config.js'
 import { step } from '../src/game/step.js'
 import { eventsOfType, fillBelt, newGame, run } from './helpers.js'
 
@@ -64,6 +64,12 @@ describe('belt motion', () => {
 
     it('reports jammed once the oven has nowhere to put the next tray', () => {
         const state = newGame({ difficulty: 'medium' })
+        // The jam rule is per belt, and a room now has more than one. Reduce to
+        // a single lane so "a full belt bakes nothing" stays a claim about the
+        // jammed belt rather than about whichever other lane still had room.
+        state.belts = state.belts.slice(0, 1)
+        state.beltCount = 1
+
         state.doorsOpen = false
         state.belts[0].slots.fill(null)
         fillBelt(state, Array.from({ length: SLOT_COUNT }, (_, i) => 10 + i))
@@ -120,18 +126,41 @@ describe('belt motion', () => {
     })
 
     it('staggers beats across belts so they never lurch in unison', () => {
-        const state = newGame({ difficulty: 'hard' })
-        // resolveSetup pins M2 to one belt, so build the multi-belt case by hand.
-        state.beltCount = 3
-        state.belts = [0, 1, 2].map(index => ({
-            id: `b${index + 1}`,
-            slots: new Array(SLOT_COUNT).fill(null),
-            accMs: (state.advanceMs * index) / 3,
-            jammed: false,
-        }))
+        // Four seats is what buys the third belt, and three belts is the case
+        // worth asserting: one synchronised jolt across the whole bakery reads
+        // as the page stuttering rather than as machinery running.
+        const state = newGame({ count: 4, difficulty: 'hard' })
+
+        assert.equal(state.belts.length, 3)
 
         const offsets = state.belts.map(belt => belt.accMs)
-        assert.deepEqual(new Set(offsets).size, 3, 'three distinct phase offsets')
+        assert.equal(new Set(offsets).size, 3, 'three distinct phase offsets')
+    })
+})
+
+/*
+ * Belts are dealt by how many children are at the counter, not by tier. Two
+ * players on one belt is a queue — long stretches where nothing on screen is
+ * worth either hand, and the one tray that is becomes a race rather than two
+ * parallel problems.
+ */
+describe('belts by player count', () => {
+    for (const [count, expected] of [[2, 2], [3, 2], [4, 3]]) {
+        it(`${count} players get ${expected} belts`, () => {
+            // The tier the client actually starts a room on.
+            const state = newGame({ count, difficulty: 'easy' })
+
+            assert.equal(state.beltCount, expected)
+            assert.equal(state.belts.length, expected, 'the array agrees with the count')
+            assert.equal(new Set(state.belts.map(belt => belt.id)).size, expected, 'distinct ids')
+        })
+    }
+
+    it('never exceeds what the tier allows', () => {
+        // `easy` is the shipped tier and permits all three; a tier that capped
+        // belts lower would still be honoured rather than overridden here.
+        assert.equal(beltCountFor(4, 'easy'), 3)
+        assert.equal(beltCountFor(4, 'medium'), 2, 'medium caps at two')
     })
 })
 
